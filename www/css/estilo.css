@@ -1,0 +1,16 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    background-color: grey;
+}
+.form {
+    position: relative;
+    right: -50px;
+    bottom: -50px;
+    width: 500px;
+    height: 500px;
+    text-align: center;
+    background-color:white;
+}
+

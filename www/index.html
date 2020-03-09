@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Counter</title>
+		<link rel="stylesheet" type="text/css" href="css/estilo.css">
+        
+	</head>
+	<body onload=start()>
+		<!-- UI layout -->
+		<div class="form">
+			<form action="/action_page.php">
+			  <label for="fname">First name:</label><br>
+			  <input type="text" id="fname" name="fname" value="John"><br>
+			  <label for="lname">Last name:</label><br>
+			  <input type="text" id="lname" name="lname" value="Doe"><br><br>
+			  <input type="submit" value="Submit">
+			</form> 
+		</div>
+
+		<!-- Connect UI actions to Go functions -->
+		<script>
+			
+			const counter = document.querySelector('.counter');
+			const btnIncr = document.querySelector('.btn-incr');
+			const btnDecr = document.querySelector('.btn-decr');
+
+			// We use async/await because Go functions are asynchronous
+			const render = async () => {
+				counter.innerText = `Count: ${await window.counterValue()}`;
+			};
+
+			btnIncr.addEventListener('click', async () => {
+				await counterAdd(1); // Call Go function
+				render();
+			});
+
+			btnDecr.addEventListener('click', async () => {
+				await counterAdd(-1); // Call Go function
+				render();
+			});
+
+			render();
+		</script>
+	</body>
+</html>
