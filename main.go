@@ -8,11 +8,21 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"time"
 
 	"github.com/zserge/lorca"
 )
 
+type backUp struct {
+	nextBackUpTime time.Time
+}
+
+func (b *backUp) fixTime(nextBackUp string) {
+	// b.nextBackUpTime = time.Parse()
+}
+
 func main() {
+	u := user{}
 	args := []string{}
 	if runtime.GOOS == "linux" {
 		args = append(args, "--class=Lorca")
@@ -34,12 +44,7 @@ func main() {
 	go http.Serve(ln, http.FileServer(FS))
 	ui.Load(fmt.Sprintf("http://%s", ln.Addr()))
 
-	// You may use console.log to debug your JS code, it will be printed via
-	// log.Println(). Also exceptions are printed in a similar manner.
-	ui.Eval(`
-		console.log("Hello, world!");
-		console.log('Multiple values:', [1, false, {"x":5}]);
-	`)
+	ui.Bind("logIn", u.SignIn)
 
 	// Wait until the interrupt signal arrives or browser window is closed
 	sigc := make(chan os.Signal)
