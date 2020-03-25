@@ -14,11 +14,19 @@ import (
 )
 
 type backUp struct {
-	nextBackUpTime time.Time
+	nextBackUpTime time.Duration
 }
 
-func (b *backUp) fixTime(nextBackUp string) {
-	// b.nextBackUpTime = time.Parse()
+func (b *backUp) fixTime(nextBackUp string) error {
+	var err error
+	b.nextBackUpTime, err = time.ParseDuration(nextBackUp)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+func (b *backUp) waitNextBackUp() {
+	<-time.After(b.nextBackUpTime)
 }
 
 func main() {
