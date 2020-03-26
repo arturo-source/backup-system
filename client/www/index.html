@@ -3,21 +3,26 @@
 	<head>
 		<title>Counter</title>
 		<link rel="stylesheet" type="text/css" href="css/estilo.css">
+		<link href="https://fonts.googleapis.com/css?family=Baloo+Thambi+2&display=swap" rel="stylesheet">
         
 	</head>
 	<body onload=start()>
 		<!-- UI layout -->
+		
 		<div class="form">
+			<div><h1>Login</h1></div><br>
 			<form action="/action_page.php">
-			  <label for="fname">First name:</label><br>
-			  <input type="text" id="fname" name="fname" value="John"><br>
-			  <label for="lname">Last name:</label><br>
-			  <input type="text" id="lname" name="lname" value="Doe"><br><br>
-			  <input type="submit" value="Submit">
+			  <label for="fname">User</label><br>
+			  <input type="text" id="login"><br>
+			  <label for="lname">Password</label><br>
+			  <input type="text" id="password"><br><br>
+			  <input type="submit" class="action-button shadow animate blue" value="Login">
 			</form> 
+		<br>
+		<div><a href="register.html">Registrarse</a></div>
 		</div>
 
-		<!-- Connect UI actions to Go functions -->
+		<!-- Connect UI actions to Go functions 
 		<script>
 			
 			const counter = document.querySelector('.counter');
@@ -39,7 +44,7 @@
 				render();
 			});
 
-			render();
+			render();-->
 		</script>
 	</body>
 </html>
