@@ -5,8 +5,12 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/tls"
 	"fmt"
 	"io"
+	"net/http"
+	"net/url"
+	"os"
 )
 
 type user struct {
@@ -31,6 +35,8 @@ func (u *user) SignIn(username, password string) {
 	u.username = username
 	u.Hash(password)
 
+	u.SendToServer("login")
+
 	//TODO: Check if the user exists in the server db
 }
 
@@ -38,7 +44,9 @@ func (u *user) SignUp(username, password string) {
 	u.username = username
 	u.Hash(password)
 
-	//TODO: Create the user in the server db
+	u.SendToServer("register")
+
+	//TODO: Create the user in the server db and check if its done Ok
 }
 
 func (u *user) EncryptFile(content []byte) ([]byte, error) {
@@ -82,6 +90,28 @@ func (u *user) DecryptFile(content []byte) ([]byte, error) {
 
 	return decryptedContent, nil
 }
-func (u *user) SendToServer(content []byte) {
-	//TO DO
+
+//SendToServer returns an error if there is an error and true if the message arrived well
+func (u *user) SendToServer(comand string) error {
+	data := url.Values{}
+	data.Set("comand", comand)
+	data.Set("username", u.username)
+	data.Set("passwd", string(u.passwordLogInServerHassed))
+
+	// Not verifying the credentials because they are autosigned
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+
+	r, err := client.PostForm("https://localhost:10443", data)
+	if err != nil {
+		return err
+	}
+	io.Copy(os.Stdout, r.Body)
+	fmt.Println()
+
+	//TODO: Check if the comunication has done Ok and return that
+
+	return nil
 }
