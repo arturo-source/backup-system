@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/zlib"
 	"fmt"
+	"html/template"
 	"io"
 	"io/ioutil"
 	"log"
@@ -67,6 +68,20 @@ func chargeView(filePath string) {
 	}
 
 	ui.Load("data:text/html," + url.PathEscape(string(data)))
+}
+
+type Date struct {
+	date string
+}
+
+func chargeViewTemplate(filePath string, dates []Date) {
+	tmpl := template.Must(template.ParseFiles(filePath))
+
+	buff := bytes.Buffer{}
+
+	tmpl.Execute(&buff, dates)
+
+	ui.Load("data:text/html," + url.PathEscape(string(buff.Bytes())))
 }
 
 func main() {
