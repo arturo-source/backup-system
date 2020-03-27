@@ -97,7 +97,7 @@ func main() {
 	}
 	defer ui.Close()
 
-	chargeView("www/index.html")
+	chargeView("./www/index.html")
 	ui.Bind("SignIn", u.SignIn)
 	ui.Bind("SignUp", u.SignUp)
 	ui.Bind("EncryptFile", u.EncryptFile)
