@@ -71,7 +71,7 @@ func chargeView(filePath string) {
 }
 
 type Date struct {
-	date string
+	Date string
 }
 
 func chargeViewTemplate(filePath string, dates []Date) {
@@ -97,7 +97,10 @@ func main() {
 	}
 	defer ui.Close()
 
-	chargeView("./www/index.html")
+	fechas := []Date { Date {"12/12/2020"},Date {"13/12/2020"},Date {"14/12/2020"},Date {"15/12/2020"}}
+	chargeViewTemplate("www/download.html",fechas)
+
+	//chargeView("./www/index.html")
 	ui.Bind("SignIn", u.SignIn)
 	ui.Bind("SignUp", u.SignUp)
 	ui.Bind("EncryptFile", u.EncryptFile)

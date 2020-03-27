@@ -22,7 +22,7 @@
 					<label>Places:</label>
 					<select id="places" name="places">
 						{{range .}}
-						<option value="{{.Value}}" id="{{.Id}}" {{if .Selected}}selected{{end}}>{{.Text}}</option>
+						<option value="{{.Date}}" id="{{.Date}}" >{{.Date}}</option>
 						{{end}}
 					</select>
 				</div>
