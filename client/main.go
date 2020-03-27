@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bytes"
+	"compress/zlib"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
-	"net"
-	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"runtime"
@@ -12,6 +15,8 @@ import (
 
 	"github.com/zserge/lorca"
 )
+
+var ui lorca.UI
 
 type backUp struct {
 	nextBackUpTime time.Duration
@@ -21,12 +26,47 @@ func (b *backUp) fixTime(nextBackUp string) error {
 	var err error
 	b.nextBackUpTime, err = time.ParseDuration(nextBackUp)
 	if err != nil {
+		b.nextBackUpTime = 0 * time.Second
 		return err
 	}
 	return nil
 }
-func (b *backUp) waitNextBackUp() {
-	<-time.After(b.nextBackUpTime)
+func (b *backUp) waitNextBackUp() error {
+	if b.nextBackUpTime != 0 {
+		<-time.After(b.nextBackUpTime)
+	} else {
+		return fmt.Errorf("Error: time not set")
+	}
+	return nil
+}
+
+func compress(data []byte) []byte {
+	var b bytes.Buffer
+	w := zlib.NewWriter(&b)
+	w.Write(data)
+	w.Close()
+	return b.Bytes()
+}
+
+func decompress(data []byte) []byte {
+	var b bytes.Buffer
+	r, err := zlib.NewReader(bytes.NewReader(data))
+	if err != nil {
+		panic(err)
+	}
+	defer r.Close()
+
+	io.Copy(&b, r)
+	return b.Bytes()
+}
+
+func chargeView(filePath string) {
+	data, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		panic(err)
+	}
+
+	ui.Load("data:text/html," + url.PathEscape(string(data)))
 }
 
 func main() {
@@ -35,25 +75,20 @@ func main() {
 	if runtime.GOOS == "linux" {
 		args = append(args, "--class=Lorca")
 	}
-	
+
 	ui, err := lorca.New("", "", 480, 320, args...)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer ui.Close()
 
-	// Load HTML.
-	// You may also use `data:text/html,<base64>` approach to load initial HTML,
-	// e.g: ui.Load("data:text/html," + url.PathEscape(html))
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer ln.Close()
-	go http.Serve(ln, http.FileServer(FS))
-	ui.Load(fmt.Sprintf("http://%s", ln.Addr()))
-
-	ui.Bind("logIn", u.SignIn)
+	chargeView("www/index.html")
+	ui.Bind("SignIn", u.SignIn)
+	ui.Bind("SignUp", u.SignUp)
+	ui.Bind("EncryptFile", u.EncryptFile)
+	ui.Bind("DecryptFile", u.DecryptFile)
+	ui.Bind("SignUp", u.SignUp)
+	ui.Bind("chargeView", chargeView)
 
 	// Wait until the interrupt signal arrives or browser window is closed
 	sigc := make(chan os.Signal)

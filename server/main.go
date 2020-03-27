@@ -3,34 +3,36 @@ package main
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"io"
+	"io/ioutil"
 	"net/http"
 )
 
 type user struct {
-	username       string
-	passwordHashed []byte
+	Username       string `json:"name"`
+	PasswordHashed []byte `json:"pass"`
 }
 
-func (u *user) Hash(password string) {
+func (u *user) Hash(password []byte) {
 	hash := sha256.New()
-	_, err := hash.Write([]byte(password))
+	_, err := hash.Write(password)
 	if err != nil {
 		panic(err)
 	}
-	u.passwordHashed = hash.Sum(nil)
+	u.PasswordHashed = hash.Sum(nil)
 }
 
-func (u *user) CompareHash(passwordToCompare string) bool {
+func (u *user) CompareHash(passwordToCompare []byte) bool {
 	hash := sha256.New()
-	_, err := hash.Write([]byte(passwordToCompare))
+	_, err := hash.Write(passwordToCompare)
 	if err != nil {
 		panic(err)
 	}
 	passwordHashed := hash.Sum(nil)
 
-	return bytes.Compare(u.passwordHashed, passwordHashed) == 0
+	return bytes.Compare(u.PasswordHashed, passwordHashed) == 0
 }
 
 // Group of users registered on the server
@@ -42,6 +44,7 @@ type resp struct {
 	Msg string
 }
 
+// Fill the struct and send the response
 func response(w io.Writer, ok bool, msg string) {
 	r := resp{Ok: ok, Msg: msg}
 	rJSON, err := json.Marshal(&r)
@@ -52,48 +55,81 @@ func response(w io.Writer, ok bool, msg string) {
 }
 
 func main() {
-	http.HandleFunc("/", handler)
+	data, err := ioutil.ReadFile("bbdd")
+	if err != nil {
+		panic(err)
+	}
+	users = make(map[string]user)
 
-	err := http.ListenAndServeTLS(":10443", "cert.pem", "key.pem", nil)
+	// If the db is empty, then you don't have to Unmarshal
+	// Because it causes error
+	if len(data) > 0 {
+		err = json.Unmarshal(data, &users)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	http.HandleFunc("/register", registerHandler)
+	http.HandleFunc("/login", loginHandler)
+
+	err = http.ListenAndServeTLS(":9043", "certificates/server.crt", "certificates/server.key", nil)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func handler(w http.ResponseWriter, req *http.Request) {
+// Response "Usuario registrado" if register have been possible
+func registerHandler(w http.ResponseWriter, req *http.Request) {
 	req.ParseForm()
 	w.Header().Set("Content-Type", "text/plain")
 
-	switch req.Form.Get("comand") { // The requested action
-	case "register":
-		u := user{}
-		u.username = req.Form.Get("username")
-		password := req.Form.Get("passwd")
+	u := user{}
+	u.Username = req.Form.Get("username")
+	password, err := base64.StdEncoding.DecodeString(req.Form.Get("passwd"))
+	if err != nil {
+		panic(err)
+	}
 
-		u.Hash(password)
+	u.Hash(password)
 
-		_, ok := users[u.username] // Is the user in the db?
-		if ok {
-			response(w, false, "Usuario ya registrado")
-		} else {
-			users[u.username] = u
-			response(w, true, "Usuario registrado")
+	_, ok := users[u.Username] // Is the user in the db?
+	if ok {
+		response(w, false, "Usuario ya registrado")
+	} else {
+		users[u.Username] = u
+		// Parsing the map to array of bytes
+		uJSON, err := json.Marshal(users)
+		if err != nil {
+			panic(err)
 		}
-
-	case "login":
-		u, ok := users[req.Form.Get("username")] // Is the user in the db?
-		if ok {
-			password := req.Form.Get("passwd")
-			if u.CompareHash(password) { // The password hashed match
-				response(w, true, "Credenciales válidas")
-			} else {
-				response(w, false, "Credenciales inválidas")
-			}
-		} else {
-			response(w, false, "Usuario inexistente")
-			return
+		// This array of bytes is written in the db
+		err = ioutil.WriteFile("bbdd", uJSON, 0644)
+		if err != nil {
+			panic(err)
 		}
-	default:
-		response(w, false, "Comando inválido")
+		response(w, true, "Usuario registrado")
+	}
+}
+
+// Response "Credenciales válidas" if data is Ok
+// Other cases are not Ok
+func loginHandler(w http.ResponseWriter, req *http.Request) {
+	req.ParseForm()
+	w.Header().Set("Content-Type", "text/plain")
+
+	u, ok := users[req.Form.Get("username")] // Is the user in the db?
+	if ok {
+		password, err := base64.StdEncoding.DecodeString(req.Form.Get("passwd"))
+		if err != nil {
+			panic(err)
+		}
+		if u.CompareHash(password) { // The password hashed match
+			response(w, true, "Credenciales válidas")
+		} else {
+			response(w, false, "Credenciales inválidas")
+		}
+	} else {
+		response(w, false, "Usuario inexistente")
 	}
 }
