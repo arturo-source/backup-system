@@ -43,7 +43,7 @@ func (u *user) SignIn(username, password string) (resp, error) {
 	u.username = username
 	u.Hash(password)
 
-	response, err := u.SendToServer("login")
+	response, err := u.AuthorizeOnServer("login")
 	if err != nil {
 		return resp{}, err
 	}
@@ -54,7 +54,7 @@ func (u *user) SignUp(username, password string) (resp, error) {
 	u.username = username
 	u.Hash(password)
 
-	response, err := u.SendToServer("register")
+	response, err := u.AuthorizeOnServer("register")
 	if err != nil {
 		return resp{}, err
 	}
@@ -129,8 +129,8 @@ func (u *user) DecryptFile(filePath string) error {
 	return nil
 }
 
-//SendToServer returns an error if there is an error and true if the message arrived well
-func (u *user) SendToServer(comand string) (resp, error) {
+//AuthorizeOnServer returns an error if there is an error and true if the message arrived well
+func (u *user) AuthorizeOnServer(comand string) (resp, error) {
 	response := resp{}
 	data := url.Values{}
 	data.Set("username", u.username)
@@ -157,4 +157,8 @@ func (u *user) SendToServer(comand string) (resp, error) {
 	json.Unmarshal(body, &response)
 
 	return response, nil
+}
+
+func (u *user) SendBackUpToServer(path string) {
+
 }

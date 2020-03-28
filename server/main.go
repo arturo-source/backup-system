@@ -72,6 +72,7 @@ func main() {
 
 	http.HandleFunc("/register", registerHandler)
 	http.HandleFunc("/login", loginHandler)
+	http.HandleFunc("/backup", loginHandler)
 
 	err = http.ListenAndServeTLS(":9043", "certificates/server.crt", "certificates/server.key", nil)
 	if err != nil {

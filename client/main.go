@@ -1,36 +1,13 @@
 package main
 
 import (
-	"bytes"
-	"compress/zlib"
 	"fmt"
-	"io"
 	"os"
 	"os/signal"
 	"runtime"
 
 	"github.com/zserge/lorca"
 )
-
-func compress(data []byte) []byte {
-	var b bytes.Buffer
-	w := zlib.NewWriter(&b)
-	w.Write(data)
-	w.Close()
-	return b.Bytes()
-}
-
-func decompress(data []byte) []byte {
-	var b bytes.Buffer
-	r, err := zlib.NewReader(bytes.NewReader(data))
-	if err != nil {
-		panic(err)
-	}
-	defer r.Close()
-
-	io.Copy(&b, r)
-	return b.Bytes()
-}
 
 func main() {
 	u := user{}
