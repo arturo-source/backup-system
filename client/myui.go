@@ -28,7 +28,7 @@ func (myui *MyUI) chargeView(filePath string) {
 
 //Date is needed to show the date of the backups
 type Date struct {
-	date string
+	Date string
 }
 
 func (myui *MyUI) chargeViewTemplate(filePath string, dates []Date) {

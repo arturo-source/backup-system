@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
@@ -13,6 +14,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 )
 
 // Response type recieve from the server
@@ -159,6 +161,108 @@ func (u *user) AuthorizeOnServer(comand string) (resp, error) {
 	return response, nil
 }
 
-func (u *user) SendBackUpToServer(path string) {
+func (u *user) SendBackUpToServer(path string) (resp, error) {
+	response := resp{}
+	//Creates a temporar file to compress, encrypt and send to the server
+	err := compressFile(path, "compressed.zip")
+	if err != nil {
+		return response, err
+	}
+	err = u.EncryptFile("compressed.zip")
+	if err != nil {
+		return response, err
+	}
+	//Read the content of the file
+	content, err := ioutil.ReadFile("compressed.zip")
+	if err != nil {
+		return response, err
+	}
 
+	req, err := http.NewRequest("POST", "https://localhost:9043/backup", bytes.NewBuffer(content))
+	// Not verifying the credentials because they are autosigned
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	res, err := client.Do(req)
+	if err != nil {
+		return response, err
+	}
+	defer res.Body.Close()
+
+	//Unmarshal the response to a res struct
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return response, err
+	}
+	json.Unmarshal(body, &response)
+
+	//Removes the temporary file
+	err = os.Remove("compressed.zip")
+	if err != nil {
+		return response, err
+	}
+	return response, nil
+}
+func (u *user) RecoverBackUp(name string) (resp, error) {
+	response := resp{}
+	req, err := http.NewRequest("GET", "https://localhost:9043/backup", bytes.NewBuffer([]byte(name)))
+	// Not verifying the credentials because they are autosigned
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	res, err := client.Do(req)
+	if err != nil {
+		return response, err
+	}
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return response, err
+	}
+	//Creates a temporar file to decrypt, uncompress and recover the files
+	err = ioutil.WriteFile("recover.zip", body, 0644)
+	if err != nil {
+		return response, err
+	}
+	err = u.DecryptFile("recover.zip")
+	if err != nil {
+		return response, err
+	}
+	err = uncompressFile("recover.zip", "recover")
+	if err != nil {
+		return response, err
+	}
+	//Removes the temporary file
+	err = os.Remove("recover.zip")
+	if err != nil {
+		return response, err
+	}
+	return resp{Ok: true, Msg: "Recovered ok."}, nil
+}
+
+func (u *user) ListFiles() (resp, error) {
+	response := resp{}
+	req, err := http.NewRequest("GET", "https://localhost:9043/backup", nil)
+	// Not verifying the credentials because they are autosigned
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	res, err := client.Do(req)
+	if err != nil {
+		return response, err
+	}
+	defer res.Body.Close()
+
+	//Unmarshal the response to a res struct
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return response, err
+	}
+	json.Unmarshal(body, &response)
+
+	return response, nil
 }

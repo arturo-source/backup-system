@@ -5,9 +5,12 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"time"
 )
 
 type user struct {
@@ -72,7 +75,7 @@ func main() {
 
 	http.HandleFunc("/register", registerHandler)
 	http.HandleFunc("/login", loginHandler)
-	http.HandleFunc("/backup", loginHandler)
+	http.HandleFunc("/backup", backupHandler)
 
 	err = http.ListenAndServeTLS(":9043", "certificates/server.crt", "certificates/server.key", nil)
 	if err != nil {
@@ -132,5 +135,58 @@ func loginHandler(w http.ResponseWriter, req *http.Request) {
 		}
 	} else {
 		response(w, false, "Usuario inexistente")
+	}
+}
+
+func backupHandler(w http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodGet:
+		body, err := ioutil.ReadAll(req.Body)
+		if err != nil {
+			fmt.Println(err)
+		}
+		if len(body) > 0 {
+			//TODO: Check if the user exist in the db
+			//and recover from its directory
+			//Read the content of the file
+			content, err := ioutil.ReadFile("backups/" + string(body))
+			if err != nil {
+				fmt.Println(err)
+			} else {
+				w.Write(content)
+			}
+		} else {
+			content := ""
+			file, err := os.Open("backups")
+			if err != nil {
+				fmt.Printf("failed opening directory: %s\n", err)
+			}
+			defer file.Close()
+
+			list, _ := file.Readdirnames(0) // 0 to read all files and folders
+			for _, name := range list {
+				content += name + ","
+			}
+			response(w, true, content)
+		}
+
+	case http.MethodPost:
+		//Creates the directory if it doesn't exist
+		if _, err := os.Stat("backups"); os.IsNotExist(err) {
+			os.Mkdir("backups", 0755)
+		}
+		body, err := ioutil.ReadAll(req.Body)
+		if err != nil {
+			response(w, false, "Contenido del archivo vacío")
+		} else {
+			//TODO: Check if the user exist in the db
+			//and add the backup to its directory
+			//Write the content on the file
+			err = ioutil.WriteFile("backups/"+time.Now().String(), body, 0755)
+			if err != nil {
+				fmt.Println(err)
+			}
+			response(w, true, "Archivo guardado")
+		}
 	}
 }
