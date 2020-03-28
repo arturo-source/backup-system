@@ -28,18 +28,20 @@ func (myui *MyUI) chargeView(filePath string) {
 
 //Date is needed to show the date of the backups
 type Date struct {
-	date string
+	Date string
 }
 
-func (myui *MyUI) chargeViewTemplate(filePath string, dates []Date) {
+func (myui *MyUI) chargeViewTemplate(filePath string) {
 	tmpl, err := template.ParseFiles(filePath)
 	if err != nil {
 		panic(err)
 	}
+	
+	fechas := []Date{Date{"12/12/2020"}, Date{"13/12/2020"}, Date{"14/12/2020"}, Date{"15/12/2020"}}
 
 	buff := bytes.Buffer{}
 
-	err = tmpl.Execute(&buff, dates)
+	err = tmpl.Execute(&buff, fechas)
 	if err != nil {
 		panic(err)
 	}
