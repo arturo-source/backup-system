@@ -16,15 +16,14 @@ func main() {
 		args = append(args, "--class=Lorca")
 	}
 
-	ui, err := lorca.New("", "", 480, 320, args...)
+	ui, err := lorca.New("", "", 430, 510, args...)
 	if err != nil {
 		panic(err)
 	}
 	defer ui.Close()
 	myui := MyUI{ui}
 
-	fechas := []Date{Date{"12/12/2020"}, Date{"13/12/2020"}, Date{"14/12/2020"}, Date{"15/12/2020"}}
-	myui.chargeViewTemplate("www/download.html", fechas)
+	myui.chargeViewTemplate("www/download.html")
 
 	//chargeView("./www/index.html")
 	ui.Bind("SignIn", u.SignIn)

@@ -2,23 +2,23 @@
 <html>
 	<head>
 		<title>Counter</title>
-		<link rel="stylesheet" type="text/css" href="css/estilo.css">
+		<style>* {margin: 0;padding: 0;box-sizing: border-box;font-family: 'Baloo Thambi 2', cursive;background-color: #66afec;}.form {position: relative;right: -10px;bottom: -10px;width: 400px;height: 400px;text-align:center;border-radius: 10px;}label {color: azure;}h1 , h2 {color: azure;}input {border-radius: 15px;padding: 0.5%;text-align: center;}.iconmenu {position: relative;right: -180px;top: -40px;text-align: right;font-size: 30px;}.titlemenu {text-align: left;color: azure;}a {text-decoration: none;color: azure;}.animate {transition: all 0.1s;-webkit-transition: all 0.1s;}.action-button {position: relative;padding: 10px 40px;margin: 0px 10px 10px 0px;border-radius: 10px;font-family: 'Lato', sans-serif;font-size: 18px;color: #FFF;text-decoration: none;}.action-button:active {transform: translate(0px,5px);-webkit-transform: translate(0px,5px);border-bottom: 1px solid;}.blue {background-color: #3498db;border-bottom: 5px solid #2980B9;text-shadow: 0px -2px #2980B9;}.upload-btn-wrapper {position: relative;overflow: hidden;display: inline-block;}.btn {border: 2px solid gray;color: gray;background-color: white;padding: 8px 20px;border-radius: 8px;font-size: 20px;font-weight: bold;}.upload-btn-wrapper input[type=file] {font-size: 100px;position: absolute;left: 0;top: 0;opacity: 0;}</style>
 		<link href="https://fonts.googleapis.com/css?family=Baloo+Thambi+2&display=swap" rel="stylesheet">
         
 	</head>
-	<body onload=start()>
+	<body>
 		<!-- UI layout -->
 		
 		<div class="form">
-			<div class="iconmenu">
-
-				<a href="index.html">🔚</a>
+			<div>
+				<h2 class="titlemenu">MENU</h2>
+				<a onclick="chargeView('www/index.html')"class="iconmenu">&#128282;</a>
 			</div>
 			
 	 		<div><h1>Select the action</h1></div><br>
-	    	<div><a href="upload.html" class="action-button shadow animate blue">Upload</a></div><br>
-			<div><a href="periodicity.html" class="action-button shadow animate blue">Periodicity</a></div><br>
-			<div><a href="download.html" class="action-button shadow animate blue">Download</a></div>
+	    	<div><a onclick="chargeView('www/upload.html')"  class="action-button shadow animate blue">Upload</a></div><br>
+			<div><a onclick="chargeView('www/periodicity.html')" class="action-button shadow animate blue">Periodicity</a></div><br>
+			<div><a onclick="chargeViewTemplate('www/download.html')" class="action-button shadow animate blue">Download</a></div>
 		</div>
 
 		<!-- Connect UI actions to Go functions 
