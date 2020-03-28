@@ -46,7 +46,10 @@ func main() {
 	defer ui.Close()
 	myui := MyUI{ui}
 
-	myui.chargeView("./www/index.html")
+	fechas := []Date{Date{"12/12/2020"}, Date{"13/12/2020"}, Date{"14/12/2020"}, Date{"15/12/2020"}}
+	myui.chargeViewTemplate("www/download.html", fechas)
+
+	//chargeView("./www/index.html")
 	ui.Bind("SignIn", u.SignIn)
 	ui.Bind("SignUp", u.SignUp)
 	ui.Bind("EncryptFile", u.EncryptFile)
