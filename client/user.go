@@ -24,9 +24,10 @@ type resp struct {
 }
 
 type user struct {
-	username                  string
-	passwordLogInServerHassed []byte
-	cipherKey                 []byte
+	username                        string
+	passwordLogInServerHassed       []byte
+	cipherKey                       []byte
+	base64passwordLogInServerHassed string
 }
 
 func (u *user) Hash(password string) {
@@ -39,6 +40,7 @@ func (u *user) Hash(password string) {
 
 	u.cipherKey = passwordHashed[:16]
 	u.passwordLogInServerHassed = passwordHashed[16:]
+	u.base64passwordLogInServerHassed = base64.StdEncoding.EncodeToString(u.passwordLogInServerHassed)
 }
 
 func (u *user) SignIn(username, password string) (resp, error) {
@@ -137,7 +139,7 @@ func (u *user) AuthorizeOnServer(comand string) (resp, error) {
 	data := url.Values{}
 	data.Set("username", u.username)
 	//Because not normal bytes can produce error when HTTP comunications
-	data.Set("passwd", base64.StdEncoding.EncodeToString(u.passwordLogInServerHassed))
+	data.Set("passwd", u.base64passwordLogInServerHassed)
 
 	// Not verifying the credentials because they are autosigned
 	tr := &http.Transport{
@@ -179,6 +181,8 @@ func (u *user) SendBackUpToServer(path string) (resp, error) {
 	}
 
 	req, err := http.NewRequest("POST", "https://localhost:9043/backup", bytes.NewBuffer(content))
+	req.Header.Add("username", u.username)
+	req.Header.Add("passwd", u.base64passwordLogInServerHassed)
 	// Not verifying the credentials because they are autosigned
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -207,6 +211,8 @@ func (u *user) SendBackUpToServer(path string) (resp, error) {
 func (u *user) RecoverBackUp(name string) (resp, error) {
 	response := resp{}
 	req, err := http.NewRequest("GET", "https://localhost:9043/backup", bytes.NewBuffer([]byte(name)))
+	req.Header.Add("username", u.username)
+	req.Header.Add("passwd", u.base64passwordLogInServerHassed)
 	// Not verifying the credentials because they are autosigned
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -246,6 +252,8 @@ func (u *user) RecoverBackUp(name string) (resp, error) {
 func (u *user) ListFiles() (resp, error) {
 	response := resp{}
 	req, err := http.NewRequest("GET", "https://localhost:9043/backup", nil)
+	req.Header.Add("username", u.username)
+	req.Header.Add("passwd", u.base64passwordLogInServerHassed)
 	// Not verifying the credentials because they are autosigned
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
