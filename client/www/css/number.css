@@ -17,6 +17,10 @@ input[type="number"] {
     border-radius: 10px;
   }
 
+  #formulario div 
+  {
+    background-color: #74aedd;;
+  }
   
   .number-input button {
     outline:none;
