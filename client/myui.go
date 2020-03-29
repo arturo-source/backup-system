@@ -36,7 +36,7 @@ func (myui *MyUI) chargeViewTemplate(filePath string) {
 	if err != nil {
 		panic(err)
 	}
-	
+
 	fechas := []Date{Date{"12/12/2020"}, Date{"13/12/2020"}, Date{"14/12/2020"}, Date{"15/12/2020"}}
 
 	buff := bytes.Buffer{}

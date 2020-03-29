@@ -16,6 +16,7 @@
 			  <input type="text" id="user"><br>
 			  <label for="lname">Password</label><br>
 			  <input type="text" id="password"><br><br>
+			  <span style="color: red;" id="errorText"></span><br>
 			  <input type="submit" id="login" class="action-button shadow animate blue" value="Login">
 			</form>
 			<br>
@@ -24,25 +25,19 @@
 
 		<!-- Connect UI actions to Go functions -->
 		<script>
-			
-			const login    = document.querySelector("input[id='user']");
-			const user     = document.querySelector("input[id='password']");
-			const password = document.querySelector("input[id='login']");
-
-			// We use async/await because Go functions are asynchronous
-			/*const render = async () => {
-				counter.innerText = `Count: ${await window.counterValue()}`;
-			};*/
+			const login = document.getElementById("login");
+			const user = document.getElementById("user");
+			const password = document.getElementById("password");
+			var response;
 
 			login.addEventListener('click', async () => {
-				console.log(await SignIn(user.innerText,password.innerText));// Call Go function
+				response = await SignIn(user.value,password.value);// Call Go function
+				if(response.Ok) {
+					chargeView('www/menu.html');
+				} else {
+					document.getElementById("errorText").innerText = response.Msg; 
+				}
 			});
-
-			// btnDecr.addEventListener('click', async () => {
-			// 	await counterAdd(-1); // Call Go function
-
-			// });
-
 		</script>
 	</body>
 </html>

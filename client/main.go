@@ -23,9 +23,9 @@ func main() {
 	defer ui.Close()
 	myui := MyUI{ui}
 
-	myui.chargeViewTemplate("www/download.html")
+	// myui.chargeViewTemplate("www/download.html")
 
-	//chargeView("./www/index.html")
+	myui.chargeView("./www/index.html")
 	ui.Bind("SignIn", u.SignIn)
 	ui.Bind("SignUp", u.SignUp)
 	ui.Bind("EncryptFile", u.EncryptFile)

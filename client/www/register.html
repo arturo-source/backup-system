@@ -11,40 +11,33 @@
 		
 		<div class="form">
 			<div><h1>Register</h1></div><br>
-			<form action="/action_page.php">
+			<form>
 			  <label for="fname">User</label><br>
-			  <input type="text" id="login"><br>
+			  <input type="text" id="user"><br>
 			  <label for="lname">Password</label><br>
 			  <input type="text" id="password"><br><br>
-			  <input type="submit" class="action-button shadow animate blue" value="Register">
+			  <span style="color: red;" id="errorText"></span><br>
+			  <input type="submit" id="register" class="action-button shadow animate blue" value="Register">
 			</form> 
-		<br>
-		<div><a onclick="chargeView('www/index.html')">Login</a></div>
+			<br>
+			<div><a onclick="chargeView('www/index.html')">Login</a></div>
 		</div>
 
-		<!-- Connect UI actions to Go functions 
+		<!-- Connect UI actions to Go functions -->
 		<script>
-			
-			const counter = document.querySelector('.counter');
-			const btnIncr = document.querySelector('.btn-incr');
-			const btnDecr = document.querySelector('.btn-decr');
+			const register = document.getElementById("register");
+			const user = document.getElementById("user");
+			const password = document.getElementById("password");
+			var response;
 
-			// We use async/await because Go functions are asynchronous
-			const render = async () => {
-				counter.innerText = `Count: ${await window.counterValue()}`;
-			};
-
-			btnIncr.addEventListener('click', async () => {
-				await counterAdd(1); // Call Go function
-				render();
+			register.addEventListener('click', async () => {
+				response = await SignUp(user.value,password.v);// Call Go function
+				if(response.Ok) {
+					chargeView('www/menu.html');
+				} else {
+					document.getElementById("errorText").innerText = response.Msg; 
+				}
 			});
-
-			btnDecr.addEventListener('click', async () => {
-				await counterAdd(-1); // Call Go function
-				render();
-			});
-
-			render();-->
 		</script>
 	</body>
 </html>
