@@ -23,13 +23,17 @@ type resp struct {
 	Msg string
 }
 
+//user is used to log in the server, send and recover files, etc.
 type user struct {
 	username                        string
 	passwordLogInServerHassed       []byte
 	cipherKey                       []byte
 	base64passwordLogInServerHassed string
+	httpclient                      *http.Client
 }
 
+//Hash the password and save 50% to encrypt files or folders,
+//and the other 50% to be used as a passwd to log in the server
 func (u *user) Hash(password string) {
 	hash := sha256.New()
 	_, err := hash.Write([]byte(password))
@@ -40,31 +44,47 @@ func (u *user) Hash(password string) {
 
 	u.cipherKey = passwordHashed[:16]
 	u.passwordLogInServerHassed = passwordHashed[16:]
+	//Because not normal bytes can produce error when HTTP comunications
 	u.base64passwordLogInServerHassed = base64.StdEncoding.EncodeToString(u.passwordLogInServerHassed)
 }
 
+//SignIn initializes the variables of user and tries to log in
 func (u *user) SignIn(username, password string) (resp, error) {
 	u.username = username
 	u.Hash(password)
 
+	// Not verifying the credentials because they are autosigned
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	u.httpclient = &http.Client{Transport: tr}
+
 	response, err := u.AuthorizeOnServer("login")
 	if err != nil {
-		return resp{}, err
+		return resp{Ok: false, Msg: "Error trying to log in."}, err
 	}
 	return response, nil
 }
 
+//SignUp is used to register the user
 func (u *user) SignUp(username, password string) (resp, error) {
 	u.username = username
 	u.Hash(password)
 
+	// Not verifying the credentials because they are autosigned
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	u.httpclient = &http.Client{Transport: tr}
+
 	response, err := u.AuthorizeOnServer("register")
 	if err != nil {
-		return resp{}, err
+		return resp{Ok: false, Msg: "Error trying to register."}, err
 	}
 	return response, nil
 }
 
+//EncryptFile recieves a filepath and write the same file but encrypted
 func (u *user) EncryptFile(filePath string) error {
 	//Read the content of the file
 	content, err := ioutil.ReadFile(filePath)
@@ -97,6 +117,7 @@ func (u *user) EncryptFile(filePath string) error {
 	return nil
 }
 
+//DecryptFile recieves a filepath of a file encrypted and write the same file but decrypted
 func (u *user) DecryptFile(filePath string) error {
 	//Read the content of the file
 	content, err := ioutil.ReadFile(filePath)
@@ -133,21 +154,15 @@ func (u *user) DecryptFile(filePath string) error {
 	return nil
 }
 
-//AuthorizeOnServer returns an error if there is an error and true if the message arrived well
+//AuthorizeOnServer returns an error if there is an error and
+//a resp with true if the message arrived well
 func (u *user) AuthorizeOnServer(comand string) (resp, error) {
 	response := resp{}
 	data := url.Values{}
 	data.Set("username", u.username)
-	//Because not normal bytes can produce error when HTTP comunications
 	data.Set("passwd", u.base64passwordLogInServerHassed)
 
-	// Not verifying the credentials because they are autosigned
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	client := &http.Client{Transport: tr}
-
-	r, err := client.PostForm("https://localhost:9043/"+comand, data)
+	r, err := u.httpclient.PostForm("https://localhost:9043/"+comand, data)
 	if err != nil {
 		return response, err
 	}
@@ -163,9 +178,11 @@ func (u *user) AuthorizeOnServer(comand string) (resp, error) {
 	return response, nil
 }
 
+//SendBackUpToServer sends a folder or file to the server
+//but its previously compressed and encrypted
 func (u *user) SendBackUpToServer(path string) (resp, error) {
 	response := resp{}
-	//Creates a temporar file to compress, encrypt and send to the server
+	//Creates a temporary file to compress, encrypt and send to the server
 	err := compressFile(path, "compressed.zip")
 	if err != nil {
 		return response, err
@@ -181,14 +198,11 @@ func (u *user) SendBackUpToServer(path string) (resp, error) {
 	}
 
 	req, err := http.NewRequest("POST", "https://localhost:9043/backup", bytes.NewBuffer(content))
+	//To authorize the user
 	req.Header.Add("username", u.username)
 	req.Header.Add("passwd", u.base64passwordLogInServerHassed)
-	// Not verifying the credentials because they are autosigned
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	client := &http.Client{Transport: tr}
-	res, err := client.Do(req)
+
+	res, err := u.httpclient.Do(req)
 	if err != nil {
 		return response, err
 	}
@@ -208,17 +222,17 @@ func (u *user) SendBackUpToServer(path string) (resp, error) {
 	}
 	return response, nil
 }
+
+//RecoverBackUp recieves the name (a date normaly) of what back up
+//you want to recover and decrypt and uncompress the file after that
 func (u *user) RecoverBackUp(name string) (resp, error) {
 	response := resp{}
 	req, err := http.NewRequest("GET", "https://localhost:9043/backup", bytes.NewBuffer([]byte(name)))
+	//To authorize the user
 	req.Header.Add("username", u.username)
 	req.Header.Add("passwd", u.base64passwordLogInServerHassed)
-	// Not verifying the credentials because they are autosigned
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	client := &http.Client{Transport: tr}
-	res, err := client.Do(req)
+
+	res, err := u.httpclient.Do(req)
 	if err != nil {
 		return response, err
 	}
@@ -228,7 +242,7 @@ func (u *user) RecoverBackUp(name string) (resp, error) {
 	if err != nil {
 		return response, err
 	}
-	//Creates a temporar file to decrypt, uncompress and recover the files
+	//Creates a temporary file to decrypt, uncompress and recover the files
 	err = ioutil.WriteFile("recover.zip", body, 0644)
 	if err != nil {
 		return response, err
@@ -249,17 +263,15 @@ func (u *user) RecoverBackUp(name string) (resp, error) {
 	return resp{Ok: true, Msg: "Recovered ok."}, nil
 }
 
+//ListFiles ask the server for the backups saved in the server from this user
 func (u *user) ListFiles() (resp, error) {
 	response := resp{}
 	req, err := http.NewRequest("GET", "https://localhost:9043/backup", nil)
+	//To authorize the user
 	req.Header.Add("username", u.username)
 	req.Header.Add("passwd", u.base64passwordLogInServerHassed)
-	// Not verifying the credentials because they are autosigned
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	client := &http.Client{Transport: tr}
-	res, err := client.Do(req)
+
+	res, err := u.httpclient.Do(req)
 	if err != nil {
 		return response, err
 	}
