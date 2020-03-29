@@ -101,7 +101,7 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 
 	_, ok := users[u.Username] // Is the user in the db?
 	if ok {
-		response(w, false, "Usuario ya registrado")
+		response(w, false, "User is already registered")
 	} else {
 		users[u.Username] = u
 		// Parsing the map to array of bytes
@@ -114,7 +114,7 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			panic(err)
 		}
-		response(w, true, "Usuario registrado")
+		response(w, true, "User has been registered")
 	}
 }
 
@@ -131,12 +131,12 @@ func loginHandler(w http.ResponseWriter, req *http.Request) {
 			panic(err)
 		}
 		if u.CompareHash(password) { // The password hashed match
-			response(w, true, "Credenciales válidas")
+			response(w, true, "Valid credentials")
 		} else {
-			response(w, false, "Credenciales inválidas")
+			response(w, false, "Invalid credentials")
 		}
 	} else {
-		response(w, false, "Usuario inexistente")
+		response(w, false, "The user doesn't exist")
 	}
 }
 
@@ -207,7 +207,7 @@ func backupHandler(w http.ResponseWriter, req *http.Request) {
 		checkMkdir(backUpPath)
 		body, err := ioutil.ReadAll(req.Body)
 		if err != nil {
-			response(w, false, "Contenido del archivo vacío")
+			response(w, false, "The file is empty")
 		} else {
 			// If the user is valid, then can save files in its directory
 			if u, ok := isValidUser(req); ok {
@@ -217,7 +217,7 @@ func backupHandler(w http.ResponseWriter, req *http.Request) {
 				if err != nil {
 					fmt.Println(err)
 				}
-				response(w, true, "Archivo guardado")
+				response(w, true, "File saved")
 			}
 		}
 	}
