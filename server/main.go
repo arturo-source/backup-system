@@ -18,7 +18,7 @@ type user struct {
 	PasswordHashed []byte `json:"pass"`
 }
 
-const backUpPath string = "backups"
+const backUpPath string = "backups/"
 
 func (u *user) Hash(password []byte) {
 	hash := sha256.New()
@@ -149,7 +149,7 @@ func isValidUser(req *http.Request) (string, bool) {
 			panic(err)
 		}
 		if u.CompareHash(password) { // The password hashed match
-			return "/" + u.Username + "/", true
+			return u.Username + "/", true
 		}
 	}
 	return "", false
