@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"io/ioutil"
 	"net/url"
+	"strings"
 
 	"github.com/zserge/lorca"
 )
@@ -12,6 +13,7 @@ import (
 //MyUI is an struct to be able to charge views from javascript
 type MyUI struct {
 	ui lorca.UI
+	u  user
 }
 
 func (myui *MyUI) chargeView(filePath string) {
@@ -31,17 +33,27 @@ type Date struct {
 	Date string
 }
 
-func (myui *MyUI) chargeViewTemplate(filePath string) {
+func (myui *MyUI) chargeViewDownload(filePath string) {
 	tmpl, err := template.ParseFiles(filePath)
 	if err != nil {
 		panic(err)
 	}
 
-	fechas := []Date{Date{"12/12/2020"}, Date{"13/12/2020"}, Date{"14/12/2020"}, Date{"15/12/2020"}}
+	resp, err := myui.u.ListFiles()
+	if err != nil {
+		panic(err)
+	}
+	dates := []Date{}
+	if resp.Ok && len(resp.Msg) > 0 {
+		datesSplit := strings.Split(resp.Msg, ",")
+		for _, d := range datesSplit {
+			dates = append(dates, Date{d})
+		}
+	}
 
 	buff := bytes.Buffer{}
 
-	err = tmpl.Execute(&buff, fechas)
+	err = tmpl.Execute(&buff, dates)
 	if err != nil {
 		panic(err)
 	}

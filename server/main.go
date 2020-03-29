@@ -18,6 +18,8 @@ type user struct {
 	PasswordHashed []byte `json:"pass"`
 }
 
+const backUpPath string = "backups"
+
 func (u *user) Hash(password []byte) {
 	hash := sha256.New()
 	_, err := hash.Write(password)
@@ -138,6 +140,28 @@ func loginHandler(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// Return true if the password is from the user
+func isValidUser(req *http.Request) (string, bool) {
+	u, ok := users[req.Form.Get("username")] // Is the user in the db?
+	if ok {
+		password, err := base64.StdEncoding.DecodeString(req.Form.Get("passwd"))
+		if err != nil {
+			panic(err)
+		}
+		if u.CompareHash(password) { // The password hashed match
+			return "/" + u.Username + "/", true
+		}
+	}
+	return "", false
+}
+
+// Creates the directory if it doesn't exists
+func checkMkdir(path string) {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		os.Mkdir(path, 0755)
+	}
+}
+
 func backupHandler(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
@@ -146,47 +170,55 @@ func backupHandler(w http.ResponseWriter, req *http.Request) {
 			fmt.Println(err)
 		}
 		if len(body) > 0 {
-			//TODO: Check if the user exist in the db
-			//and recover from its directory
-			//Read the content of the file
-			content, err := ioutil.ReadFile("backups/" + string(body))
-			if err != nil {
-				fmt.Println(err)
-			} else {
-				w.Write(content)
+			// If the user is valid, then response the content of the backup
+			if u, ok := isValidUser(req); ok {
+				//Read the content of the file
+				content, err := ioutil.ReadFile(backUpPath + u + string(body))
+				if err != nil { //Response backup not found when there isn't file?
+					fmt.Println(err)
+				} else {
+					w.Write(content)
+				}
 			}
 		} else {
-			content := ""
-			file, err := os.Open("backups")
-			if err != nil {
-				fmt.Printf("failed opening directory: %s\n", err)
-			}
-			defer file.Close()
+			// If the user is valid, then list the content of the backups and response
+			if u, ok := isValidUser(req); ok {
+				content := ""
+				checkMkdir(backUpPath + u)
+				file, err := os.Open(backUpPath + u)
+				if err != nil {
+					fmt.Printf("failed opening directory: %s\n", err)
+				}
+				defer file.Close()
 
-			list, _ := file.Readdirnames(0) // 0 to read all files and folders
-			for _, name := range list {
-				content += name + ","
+				list, _ := file.Readdirnames(0) // 0 to read all files and folders
+				for _, name := range list {
+					content += name + ","
+				}
+				contentLen := len(content)
+				if contentLen > 0 {
+					content = content[:contentLen-1]
+				}
+				response(w, true, content)
 			}
-			response(w, true, content)
 		}
 
 	case http.MethodPost:
-		//Creates the directory if it doesn't exist
-		if _, err := os.Stat("backups"); os.IsNotExist(err) {
-			os.Mkdir("backups", 0755)
-		}
+		checkMkdir(backUpPath)
 		body, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			response(w, false, "Contenido del archivo vacío")
 		} else {
-			//TODO: Check if the user exist in the db
-			//and add the backup to its directory
-			//Write the content on the file
-			err = ioutil.WriteFile("backups/"+time.Now().String(), body, 0755)
-			if err != nil {
-				fmt.Println(err)
+			// If the user is valid, then can save files in its directory
+			if u, ok := isValidUser(req); ok {
+				checkMkdir(backUpPath + u)
+				//Write the content on the file
+				err = ioutil.WriteFile(backUpPath+u+time.Now().String(), body, 0644)
+				if err != nil {
+					fmt.Println(err)
+				}
+				response(w, true, "Archivo guardado")
 			}
-			response(w, true, "Archivo guardado")
 		}
 	}
 }

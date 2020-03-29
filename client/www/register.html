@@ -31,7 +31,7 @@
 			var response;
 
 			register.addEventListener('click', async () => {
-				response = await SignUp(user.value,password.v);// Call Go function
+				response = await SignUp(user.value,password.value);// Call Go function
 				if(response.Ok) {
 					chargeView('www/menu.html');
 				} else {

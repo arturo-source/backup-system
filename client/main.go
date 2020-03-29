@@ -21,18 +21,18 @@ func main() {
 		panic(err)
 	}
 	defer ui.Close()
-	myui := MyUI{ui}
+	myui := MyUI{ui, u}
 
-	// myui.chargeViewTemplate("www/download.html")
+	// myui.chargeViewDownload("www/download.html")
 
 	myui.chargeView("./www/index.html")
-	ui.Bind("SignIn", u.SignIn)
-	ui.Bind("SignUp", u.SignUp)
-	ui.Bind("EncryptFile", u.EncryptFile)
-	ui.Bind("DecryptFile", u.DecryptFile)
-	ui.Bind("SignUp", u.SignUp)
+	ui.Bind("SignIn", myui.u.SignIn)
+	ui.Bind("SignUp", myui.u.SignUp)
+	ui.Bind("EncryptFile", myui.u.EncryptFile)
+	ui.Bind("DecryptFile", myui.u.DecryptFile)
+	ui.Bind("SignUp", myui.u.SignUp)
 	ui.Bind("chargeView", myui.chargeView)
-	ui.Bind("chargeViewTemplate", myui.chargeViewTemplate)
+	ui.Bind("chargeViewDownload", myui.chargeViewDownload)
 
 	// Wait until the interrupt signal arrives or browser window is closed
 	sigc := make(chan os.Signal)
