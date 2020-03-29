@@ -41,10 +41,11 @@
 		const login = document.getElementById("submit");
 		const downloads = document.getElementById("downloads");
 		var response;
-			console.log(downloads.value);
-
+	
+		const select = downloads.options[downloads.selectedIndex].text;
+		
 		login.addEventListener('click', async () => {
-			response = await RecoverBackUp(downloads.value);// Call Go function
+			response = await RecoverBackUp(select);// Call Go function
 			if (response.Ok) {
 				//chargeView('www/menu.html');
 				console.log("todo bien madafaka");
