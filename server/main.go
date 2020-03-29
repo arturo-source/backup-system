@@ -85,7 +85,7 @@ func main() {
 	}
 }
 
-// Response "Usuario registrado" if register have been possible
+// Response "User has been registered" if register have been possible
 func registerHandler(w http.ResponseWriter, req *http.Request) {
 	req.ParseForm()
 	w.Header().Set("Content-Type", "text/plain")
@@ -118,7 +118,7 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// Response "Credenciales válidas" if data is Ok
+// Response "Valid credentials" if data is Ok
 // Other cases are not Ok
 func loginHandler(w http.ResponseWriter, req *http.Request) {
 	req.ParseForm()
