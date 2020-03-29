@@ -128,7 +128,7 @@
 			<div class="upload-btn-wrapper action-button shadow animate blue">Upload
 				<input type="file" id="file" name="myfile" />
 			</div><br>
-
+			<input type="text" id="text">
 			<input type="submit" id="submit" class="action-button shadow animate blue" value="Submit">
 		</form>
 		<br>
@@ -139,10 +139,11 @@
 
 		const login = document.getElementById("submit");
 		const file = document.getElementById("file");
+		const text = document.getElementById("text");
 		var response;
 
 		login.addEventListener('click', async () => {
-			response = await SendBackUpToServer(file.value);// Call Go function
+			response = await SendBackUpToServer(text.value);// Call Go function
 			if (response.Ok) {
 				//chargeView('www/menu.html');
 				console.log("todo bien madafaka");
