@@ -12,13 +12,12 @@ input[type="number"] {
   .number-input {
     border: 2px solid #ddd;
     display: inline-flex;
-  }
-  
-  .number-input {
+    
     box-sizing: border-box;
     color: aliceblue;
     border-radius: 10px;
   }
+
   
   .number-input button {
     outline:none;

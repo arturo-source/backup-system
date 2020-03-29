@@ -14,7 +14,7 @@
 		
 		<div class="form">
 			
-			<form action="/action_page.php">
+			<form>
 				<div>
 					<h2 class="titlemenu">DOWNLOAD</h2>
 					<a onclick="chargeView('www/menu.html')" class="iconmenu">&#128281;</a>
@@ -22,42 +22,36 @@
 				</div>
 				<div><h1>Select the file or folder to </h1></div><br>
 				<div>
-					<label>Places:</label>
-					<select id="places" name="places">
+					<label>List of Downloads:</label>
+					<select id="downloads" name="downloads">
 						{{range .}}
 						<option value="{{.Date}}" id="{{.Date}}" >{{.Date}}</option>
 						{{end}}
 					</select>
 				</div>
 
-			  <input type="submit" class="action-button shadow animate blue" value="Submit">
+			  <input type="submit" id="submit" class="action-button shadow animate blue" value="Submit">
 			</form> 
 		<br>
 		</div>
 
-		<!-- Connect UI actions to Go functions 
+		<!-- Connect UI actions to Go functions -->
 		<script>
 			
-			const counter = document.querySelector('.counter');
-			const btnIncr = document.querySelector('.btn-incr');
-			const btnDecr = document.querySelector('.btn-decr');
+		const login = document.getElementById("submit");
+		const downloads = document.getElementById("downloads");
+		var response;
+			console.log(downloads.value);
 
-			// We use async/await because Go functions are asynchronous
-			const render = async () => {
-				counter.innerText = `Count: ${await window.counterValue()}`;
-			};
-
-			btnIncr.addEventListener('click', async () => {
-				await counterAdd(1); // Call Go function
-				render();
-			});
-
-			btnDecr.addEventListener('click', async () => {
-				await counterAdd(-1); // Call Go function
-				render();
-			});
-
-			render();-->
+		login.addEventListener('click', async () => {
+			response = await RecoverBackUp(downloads.value);// Call Go function
+			if (response.Ok) {
+				//chargeView('www/menu.html');
+				console.log("todo bien madafaka");
+			} else {
+				console.log("mal bajado coleguita");
+			}
+		});
 		</script>
 	</body>
 </html>
