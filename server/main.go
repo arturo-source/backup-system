@@ -174,7 +174,7 @@ func backupHandler(w http.ResponseWriter, req *http.Request) {
 			if u, ok := isValidUser(req); ok {
 				//Read the content of the file
 				content, err := ioutil.ReadFile(backUpPath + u + string(body))
-				if err != nil { //Response backup not found when there isn't file?
+				if err != nil { //Response "backup not found" to client when there isn't file?
 					fmt.Println(err)
 				} else {
 					w.Write(content)
