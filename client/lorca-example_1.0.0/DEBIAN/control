@@ -1,0 +1,7 @@
+Package: lorca-example
+Version: 1.0-0
+Section: base
+Priority: optional
+Architecture: amd64
+Maintainer: Serge Zaitsev <zaitsev.serge@gmail.com>
+Description: Example for Lorca GUI toolkit
