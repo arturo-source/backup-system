@@ -1,16 +1,12 @@
 package main
 
 import (
-	"bytes"
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
-	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"os"
 	"syscall"
@@ -19,83 +15,26 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
-type user struct {
-	Username       string `json:"name"`
-	PasswordHashed []byte `json:"pass"`
+//Only readable characters to avoid problems with json
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+//RandStringBytes generates random readable array of bytes to be used as salt
+func RandStringBytes() []byte {
+	rand.Seed(time.Now().UTC().UnixNano())
+	b := make([]byte, 10)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return b
 }
 
+//Const directory where back ups are saved
 const backUpPath string = "backups/"
-
-func (u *user) Hash(password, salt []byte) {
-	hash := sha256.New()
-	_, err := hash.Write(password)
-	if err != nil {
-		panic(err)
-	}
-	u.PasswordHashed = hash.Sum(nil)
-}
-
-func (u *user) CompareHash(passwordToCompare []byte) bool {
-	hash := sha256.New()
-	_, err := hash.Write(passwordToCompare)
-	if err != nil {
-		panic(err)
-	}
-	passwordHashed := hash.Sum(nil)
-
-	return bytes.Compare(u.PasswordHashed, passwordHashed) == 0
-}
-
-//EncryptContent recieves an array of bytes and returns the same but encrypted
-func (u *user) EncryptContent(content []byte) ([]byte, error) {
-	//Creates the cipher
-	c, err := aes.NewCipher(u.PasswordHashed)
-	if err != nil {
-		return nil, err
-	}
-	gcm, err := cipher.NewGCM(c)
-	if err != nil {
-		return nil, err
-	}
-	nonce := make([]byte, gcm.NonceSize())
-	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
-		fmt.Println(err)
-	}
-	//Seal the content to be retorned encrypted
-	encryptedContent := gcm.Seal(nonce, nonce, content, nil)
-
-	return encryptedContent, nil
-}
-
-//DecryptContent recieves an array of bytes encrypted and returns the same but decrypted
-func (u *user) DecryptContent(content []byte) ([]byte, error) {
-	//Creates the cipher
-	c, err := aes.NewCipher(u.PasswordHashed)
-	if err != nil {
-		return nil, err
-	}
-	gcm, err := cipher.NewGCM(c)
-	if err != nil {
-		return nil, err
-	}
-	nonceSize := gcm.NonceSize()
-	if len(content) < nonceSize {
-		return nil, fmt.Errorf("Error: the encrypted content doens't correspond to this key because it's too small")
-	}
-	//Get the content without nonce and decrypt that
-	nonce, content := content[:nonceSize], content[nonceSize:]
-	decryptedContent, err := gcm.Open(nil, nonce, content, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return decryptedContent, nil
-}
 
 // Group of users registered on the server
 var users map[string]user
 
-//The admin to control th server
+//The admin to control the server
 var admin user
 
 // Response type to comunicate with the client
@@ -122,7 +61,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	admin.Hash(adminPassword)
+	admin.Hash(adminPassword, nil)
 
 	data, err := ioutil.ReadFile("bbdd")
 	if err != nil {
@@ -131,7 +70,7 @@ func main() {
 	users = make(map[string]user)
 
 	// If the db is empty, then you don't have to Unmarshal
-	// Because it causes error
+	// or decrypt it because it causes error
 	if len(data) > 0 {
 		decryptedData, err := admin.DecryptContent(data)
 		if err != nil {
@@ -166,7 +105,7 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 		panic(err)
 	}
 
-	u.Hash(password)
+	u.Hash(password, RandStringBytes())
 
 	_, ok := users[u.Username] // Is the user in the db?
 	if ok {

@@ -84,7 +84,7 @@ func (u *user) SignUp(username, password string) (resp, error) {
 	return response, nil
 }
 
-//EncryptFile recieves a filepath and write the same file but encrypted
+//EncryptFile receives a filepath and write the same file but encrypted
 func (u *user) EncryptFile(filePath string) error {
 	//Read the content of the file
 	content, err := ioutil.ReadFile(filePath)
@@ -117,7 +117,7 @@ func (u *user) EncryptFile(filePath string) error {
 	return nil
 }
 
-//DecryptFile recieves a filepath of a file encrypted and write the same file but decrypted
+//DecryptFile receives a filepath of a file encrypted and write the same file but decrypted
 func (u *user) DecryptFile(filePath string) error {
 	//Read the content of the file
 	content, err := ioutil.ReadFile(filePath)
@@ -223,7 +223,7 @@ func (u *user) SendBackUpToServer(path string) (resp, error) {
 	return response, nil
 }
 
-//RecoverBackUp recieves the name (a date normaly) of what back up
+//RecoverBackUp receives the name (a date normaly) of what back up
 //you want to recover and decrypt and uncompress the file after that
 func (u *user) RecoverBackUp(name string) (resp, error) {
 	response := resp{}

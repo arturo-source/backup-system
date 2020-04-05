@@ -23,8 +23,6 @@ func main() {
 	defer ui.Close()
 	myui := MyUI{ui, u}
 
-	// myui.chargeViewDownload("www/download.html")
-
 	myui.chargeView("./www/index.html")
 	ui.Bind("SignIn", myui.u.SignIn)
 	ui.Bind("SignUp", myui.u.SignUp)
@@ -34,6 +32,7 @@ func main() {
 	ui.Bind("chargeViewDownload", myui.chargeViewDownload)
 	ui.Bind("SendBackUpToServer", myui.u.SendBackUpToServer)
 	ui.Bind("RecoverBackUp", myui.u.RecoverBackUp)
+
 	// Wait until the interrupt signal arrives or browser window is closed
 	sigc := make(chan os.Signal)
 	signal.Notify(sigc, os.Interrupt)
