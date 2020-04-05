@@ -136,7 +136,7 @@ func (u *user) DecryptFile(filePath string) error {
 	}
 	nonceSize := gcm.NonceSize()
 	if len(content) < nonceSize {
-		return fmt.Errorf("Error: the encrypted content doens't correspond to this key because is too small")
+		return fmt.Errorf("Error: the encrypted content doens't correspond to this key because it's too small")
 	}
 	//Get the content without nonce and decrypt that
 	nonce, content := content[:nonceSize], content[nonceSize:]

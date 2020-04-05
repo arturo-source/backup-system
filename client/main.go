@@ -22,8 +22,6 @@ func main() {
 	}
 	defer ui.Close()
 	myui := MyUI{ui, u}
-	myui.u.SignIn("arturo", "holamundo")
-	myui.u.SendBackUpToServer("myui.go")
 
 	// myui.chargeViewDownload("www/download.html")
 

@@ -2,6 +2,9 @@ package main
 
 import (
 	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
@@ -10,7 +13,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"syscall"
 	"time"
+
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 type user struct {
@@ -20,7 +26,7 @@ type user struct {
 
 const backUpPath string = "backups/"
 
-func (u *user) Hash(password []byte) {
+func (u *user) Hash(password, salt []byte) {
 	hash := sha256.New()
 	_, err := hash.Write(password)
 	if err != nil {
@@ -40,8 +46,57 @@ func (u *user) CompareHash(passwordToCompare []byte) bool {
 	return bytes.Compare(u.PasswordHashed, passwordHashed) == 0
 }
 
+//EncryptContent recieves an array of bytes and returns the same but encrypted
+func (u *user) EncryptContent(content []byte) ([]byte, error) {
+	//Creates the cipher
+	c, err := aes.NewCipher(u.PasswordHashed)
+	if err != nil {
+		return nil, err
+	}
+	gcm, err := cipher.NewGCM(c)
+	if err != nil {
+		return nil, err
+	}
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
+		fmt.Println(err)
+	}
+	//Seal the content to be retorned encrypted
+	encryptedContent := gcm.Seal(nonce, nonce, content, nil)
+
+	return encryptedContent, nil
+}
+
+//DecryptContent recieves an array of bytes encrypted and returns the same but decrypted
+func (u *user) DecryptContent(content []byte) ([]byte, error) {
+	//Creates the cipher
+	c, err := aes.NewCipher(u.PasswordHashed)
+	if err != nil {
+		return nil, err
+	}
+	gcm, err := cipher.NewGCM(c)
+	if err != nil {
+		return nil, err
+	}
+	nonceSize := gcm.NonceSize()
+	if len(content) < nonceSize {
+		return nil, fmt.Errorf("Error: the encrypted content doens't correspond to this key because it's too small")
+	}
+	//Get the content without nonce and decrypt that
+	nonce, content := content[:nonceSize], content[nonceSize:]
+	decryptedContent, err := gcm.Open(nil, nonce, content, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return decryptedContent, nil
+}
+
 // Group of users registered on the server
 var users map[string]user
+
+//The admin to control th server
+var admin user
 
 // Response type to comunicate with the client
 type resp struct {
@@ -60,6 +115,15 @@ func response(w io.Writer, ok bool, msg string) {
 }
 
 func main() {
+	admin = user{Username: "admin"}
+	fmt.Println("Enter admin password: ")
+	//Take the password without showing it, more secure
+	adminPassword, err := terminal.ReadPassword(int(syscall.Stdin))
+	if err != nil {
+		panic(err)
+	}
+	admin.Hash(adminPassword)
+
 	data, err := ioutil.ReadFile("bbdd")
 	if err != nil {
 		panic(err)
@@ -69,11 +133,16 @@ func main() {
 	// If the db is empty, then you don't have to Unmarshal
 	// Because it causes error
 	if len(data) > 0 {
-		err = json.Unmarshal(data, &users)
+		decryptedData, err := admin.DecryptContent(data)
+		if err != nil {
+			panic(err)
+		}
+		err = json.Unmarshal(decryptedData, &users)
 		if err != nil {
 			panic(err)
 		}
 	}
+	fmt.Println("Password accepted")
 
 	http.HandleFunc("/register", registerHandler)
 	http.HandleFunc("/login", loginHandler)
@@ -109,8 +178,14 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			panic(err)
 		}
+		// Encrypt the users before saving them
+		encryptedUsers, err := admin.EncryptContent(uJSON)
+		if err != nil {
+			panic(err)
+		}
+
 		// This array of bytes is written in the db
-		err = ioutil.WriteFile("bbdd", uJSON, 0644)
+		err = ioutil.WriteFile("bbdd", encryptedUsers, 0644)
 		if err != nil {
 			panic(err)
 		}
@@ -140,7 +215,7 @@ func loginHandler(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// Return true if the password is from the user
+// Return a string which is the username directory and true if the password is from the user
 func isValidUser(req *http.Request) (string, bool) {
 	u, ok := users[req.Header.Get("username")] // Is the user in the db?
 	if ok {
