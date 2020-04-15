@@ -25,9 +25,9 @@ func (t *Tokens) Exists(tokenValue string) (int, bool) {
 	return -1, false
 }
 
-//Add adds a token to the array to this user
+//Add adds a token to the array to this user and return generated token
 //the token is valid till 1 day
-func (t *Tokens) Add(username string) {
+func (t *Tokens) Add(username string) string {
 	tomorrow := time.Now().Add(24 * time.Hour)
 	value := string(RandStringBytes())
 	token := Token{
@@ -36,6 +36,7 @@ func (t *Tokens) Add(username string) {
 		userName:   username,
 	}
 	t.tokens = append(t.tokens, token)
+	return value
 }
 
 //Delete returns true if finds the token, and deletes it.

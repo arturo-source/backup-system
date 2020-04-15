@@ -42,8 +42,9 @@ var admin user
 
 // Response type to comunicate with the client
 type resp struct {
-	Ok  bool
-	Msg string
+	Ok        bool
+	Msg       string
+	UserToken string
 }
 
 // Fill the struct and send the response
@@ -107,7 +108,7 @@ func main() {
 	}
 }
 
-// Response "User has been registered" if register have been possible
+// Response a new token if register have been possible
 func registerHandler(w http.ResponseWriter, req *http.Request) {
 	req.ParseForm()
 	w.Header().Set("Content-Type", "text/plain")
@@ -142,12 +143,12 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			panic(err)
 		}
-		tokens.Add(u.Username)
-		response(w, true, "User has been registered")
+		token := tokens.Add(u.Username)
+		response(w, true, token)
 	}
 }
 
-// Response "Valid credentials" if data is Ok
+// Response a new token if data is Ok
 // Other cases are not Ok
 func loginHandler(w http.ResponseWriter, req *http.Request) {
 	req.ParseForm()
@@ -160,8 +161,8 @@ func loginHandler(w http.ResponseWriter, req *http.Request) {
 			panic(err)
 		}
 		if u.CompareHash(password) { // The password hashed match
-			tokens.Add(u.Username)
-			response(w, true, "Valid credentials")
+			token := tokens.Add(u.Username)
+			response(w, true, token)
 		} else {
 			response(w, false, "Invalid credentials")
 		}

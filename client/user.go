@@ -30,6 +30,7 @@ type user struct {
 	cipherKey                       []byte
 	base64passwordLogInServerHassed string
 	httpclient                      *http.Client
+	token                           string
 }
 
 //Hash the password and save 50% to encrypt files or folders,
@@ -48,8 +49,7 @@ func (u *user) Hash(password string) {
 	u.base64passwordLogInServerHassed = base64.StdEncoding.EncodeToString(u.passwordLogInServerHassed)
 }
 
-//SignIn initializes the variables of user and tries to log in
-func (u *user) SignIn(username, password string) (resp, error) {
+func (u *user) sign(username, password, command string) (resp, error) {
 	u.username = username
 	u.Hash(password)
 
@@ -59,29 +59,24 @@ func (u *user) SignIn(username, password string) (resp, error) {
 	}
 	u.httpclient = &http.Client{Transport: tr}
 
-	response, err := u.AuthorizeOnServer("login")
+	response, err := u.AuthorizeOnServer(command)
 	if err != nil {
-		return resp{Ok: false, Msg: "Error trying to log in."}, err
+		return resp{Ok: false, Msg: "Error trying to " + command}, err
+	}
+	if response.Ok {
+		u.token = response.Msg
 	}
 	return response, nil
 }
 
+//SignIn initializes the variables of user and tries to log in
+func (u *user) SignIn(username, password string) (resp, error) {
+	return u.sign(username, password, "login")
+}
+
 //SignUp is used to register the user
 func (u *user) SignUp(username, password string) (resp, error) {
-	u.username = username
-	u.Hash(password)
-
-	// Not verifying the credentials because they are autosigned
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	u.httpclient = &http.Client{Transport: tr}
-
-	response, err := u.AuthorizeOnServer("register")
-	if err != nil {
-		return resp{Ok: false, Msg: "Error trying to register."}, err
-	}
-	return response, nil
+	return u.sign(username, password, "register")
 }
 
 //EncryptFile receives a filepath and write the same file but encrypted
@@ -156,13 +151,13 @@ func (u *user) DecryptFile(filePath string) error {
 
 //AuthorizeOnServer returns an error if there is an error and
 //a resp with true if the message arrived well
-func (u *user) AuthorizeOnServer(comand string) (resp, error) {
+func (u *user) AuthorizeOnServer(command string) (resp, error) {
 	response := resp{}
 	data := url.Values{}
 	data.Set("username", u.username)
 	data.Set("passwd", u.base64passwordLogInServerHassed)
 
-	r, err := u.httpclient.PostForm("https://localhost:9043/"+comand, data)
+	r, err := u.httpclient.PostForm("https://localhost:9043/"+command, data)
 	if err != nil {
 		return response, err
 	}
@@ -199,8 +194,7 @@ func (u *user) SendBackUpToServer(path string) (resp, error) {
 
 	req, err := http.NewRequest("POST", "https://localhost:9043/backup", bytes.NewBuffer(content))
 	//To authorize the user
-	req.Header.Add("username", u.username)
-	req.Header.Add("passwd", u.base64passwordLogInServerHassed)
+	req.Header.Add("token", u.token)
 
 	res, err := u.httpclient.Do(req)
 	if err != nil {
@@ -229,8 +223,7 @@ func (u *user) RecoverBackUp(name string) (resp, error) {
 	response := resp{}
 	req, err := http.NewRequest("GET", "https://localhost:9043/backup", bytes.NewBuffer([]byte(name)))
 	//To authorize the user
-	req.Header.Add("username", u.username)
-	req.Header.Add("passwd", u.base64passwordLogInServerHassed)
+	req.Header.Add("token", u.token)
 
 	res, err := u.httpclient.Do(req)
 	if err != nil {
@@ -268,8 +261,7 @@ func (u *user) ListFiles() (resp, error) {
 	response := resp{}
 	req, err := http.NewRequest("GET", "https://localhost:9043/backup", nil)
 	//To authorize the user
-	req.Header.Add("username", u.username)
-	req.Header.Add("passwd", u.base64passwordLogInServerHassed)
+	req.Header.Add("token", u.token)
 
 	res, err := u.httpclient.Do(req)
 	if err != nil {
