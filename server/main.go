@@ -31,6 +31,9 @@ func RandStringBytes() []byte {
 //Const directory where back ups are saved
 const backUpPath string = "backups/"
 
+//Variable to control the tokens
+var tokens Tokens
+
 // Group of users registered on the server
 var users map[string]user
 
@@ -54,6 +57,17 @@ func response(w io.Writer, ok bool, msg string) {
 }
 
 func main() {
+	tokens = Tokens{
+		tokens: make([]Token, 0),
+	}
+	//A goroutine to delete expired tokens each hour
+	go func() {
+		for {
+			time.Sleep(time.Hour)
+			tokens.DeleteExpireds()
+		}
+	}()
+
 	admin = user{Username: "admin"}
 	fmt.Println("Enter admin password: ")
 	//Take the password without showing it, more secure
@@ -128,6 +142,7 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			panic(err)
 		}
+		tokens.Add(u.Username)
 		response(w, true, "User has been registered")
 	}
 }
@@ -145,6 +160,7 @@ func loginHandler(w http.ResponseWriter, req *http.Request) {
 			panic(err)
 		}
 		if u.CompareHash(password) { // The password hashed match
+			tokens.Add(u.Username)
 			response(w, true, "Valid credentials")
 		} else {
 			response(w, false, "Invalid credentials")
@@ -154,6 +170,7 @@ func loginHandler(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// THIS METHOD IS DEPRECATED BECAUSE NOW WE USE TOKENS
 // Return a string which is the username directory and true if the password is from the user
 func isValidUser(req *http.Request) (string, bool) {
 	u, ok := users[req.Header.Get("username")] // Is the user in the db?
@@ -177,26 +194,27 @@ func checkMkdir(path string) {
 }
 
 func backupHandler(w http.ResponseWriter, req *http.Request) {
-	switch req.Method {
-	case http.MethodGet:
-		body, err := ioutil.ReadAll(req.Body)
-		if err != nil {
-			fmt.Println(err)
-		}
-		if len(body) > 0 {
-			// If the user is valid, then response the content of the backup
-			if u, ok := isValidUser(req); ok {
+	token := req.Header.Get("token")
+	if _, exists := tokens.Exists(token); exists {
+		switch req.Method {
+		case http.MethodGet:
+			body, err := ioutil.ReadAll(req.Body)
+			if err != nil {
+				fmt.Println(err)
+			}
+			//The content of the body is the back up name so response the content of the backup
+			if len(body) > 0 {
+				u := tokens.Owner(token) + "/"
 				//Read the content of the file
 				content, err := ioutil.ReadFile(backUpPath + u + string(body))
-				if err != nil { //Response "backup not found" to client when there isn't file?
+				if err != nil {
+					response(w, false, "Back up not found")
 					fmt.Println(err)
 				} else {
 					w.Write(content)
 				}
-			}
-		} else {
-			// If the user is valid, then list the content of the backups and response
-			if u, ok := isValidUser(req); ok {
+			} else { //If the body is empty: list the content of the backups and response
+				u := tokens.Owner(token) + "/"
 				content := ""
 				checkMkdir(backUpPath + u)
 				file, err := os.Open(backUpPath + u)
@@ -215,16 +233,14 @@ func backupHandler(w http.ResponseWriter, req *http.Request) {
 				}
 				response(w, true, content)
 			}
-		}
 
-	case http.MethodPost:
-		checkMkdir(backUpPath)
-		body, err := ioutil.ReadAll(req.Body)
-		if err != nil {
-			response(w, false, "The file is empty")
-		} else {
-			// If the user is valid, then can save files in its directory
-			if u, ok := isValidUser(req); ok {
+		case http.MethodPost:
+			checkMkdir(backUpPath)
+			body, err := ioutil.ReadAll(req.Body)
+			if err != nil {
+				response(w, false, "The file is empty")
+			} else {
+				u := tokens.Owner(token) + "/"
 				checkMkdir(backUpPath + u)
 				//Write the content on the file
 				err = ioutil.WriteFile(backUpPath+u+time.Now().String(), body, 0644)

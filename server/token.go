@@ -60,14 +60,13 @@ func (t *Tokens) DeleteExpireds() {
 	}
 }
 
-//Owner returns the username of a token and true
-//or empty string and false if it doesn't exist
-func (t *Tokens) Owner(tokenValue string) (string, bool) {
+//Owner returns the username of a token or empty string if it doesn't exist
+func (t *Tokens) Owner(tokenValue string) string {
 	i, exists := t.Exists(tokenValue)
 	if exists {
-		return t.tokens[i].userName, true
+		return t.tokens[i].userName
 	}
-	return "", false
+	return ""
 }
 
 //isOutdated returns true if the token has expired
