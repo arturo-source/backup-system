@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"regexp"
 	"syscall"
 	"time"
 
@@ -26,6 +27,12 @@ func RandStringBytes() []byte {
 		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
 	return b
+}
+
+//IsValidString returns true if the string has valid characters
+func IsValidString(username string) bool {
+	isValid, _ := regexp.MatchString("^[A-Za-z0-9]{8,32}$", username)
+	return isValid
 }
 
 //Const directory where back ups are saved
@@ -115,36 +122,40 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 
 	u := user{}
 	u.Username = req.Form.Get("username")
-	password, err := base64.StdEncoding.DecodeString(req.Form.Get("passwd"))
-	if err != nil {
-		panic(err)
-	}
+	if IsValidString(u.Username) {
+		password, err := base64.StdEncoding.DecodeString(req.Form.Get("passwd"))
+		if err != nil {
+			panic(err)
+		}
 
-	u.Hash(password, RandStringBytes())
+		u.Hash(password, RandStringBytes())
 
-	_, ok := users[u.Username] // Is the user in the db?
-	if ok {
-		response(w, false, "User is already registered")
+		_, ok := users[u.Username] // Is the user in the db?
+		if ok {
+			response(w, false, "User is already registered")
+		} else {
+			users[u.Username] = u
+			// Parsing the map to array of bytes
+			uJSON, err := json.Marshal(users)
+			if err != nil {
+				panic(err)
+			}
+			// Encrypt the users before saving them
+			encryptedUsers, err := admin.EncryptContent(uJSON)
+			if err != nil {
+				panic(err)
+			}
+
+			// This array of bytes is written in the db
+			err = ioutil.WriteFile("bbdd", encryptedUsers, 0644)
+			if err != nil {
+				panic(err)
+			}
+			token := tokens.Add(u.Username)
+			response(w, true, token)
+		}
 	} else {
-		users[u.Username] = u
-		// Parsing the map to array of bytes
-		uJSON, err := json.Marshal(users)
-		if err != nil {
-			panic(err)
-		}
-		// Encrypt the users before saving them
-		encryptedUsers, err := admin.EncryptContent(uJSON)
-		if err != nil {
-			panic(err)
-		}
-
-		// This array of bytes is written in the db
-		err = ioutil.WriteFile("bbdd", encryptedUsers, 0644)
-		if err != nil {
-			panic(err)
-		}
-		token := tokens.Add(u.Username)
-		response(w, true, token)
+		response(w, false, "Not valid username, use alphanumeric characters only.")
 	}
 }
 
@@ -154,20 +165,25 @@ func loginHandler(w http.ResponseWriter, req *http.Request) {
 	req.ParseForm()
 	w.Header().Set("Content-Type", "text/plain")
 
-	u, ok := users[req.Form.Get("username")] // Is the user in the db?
-	if ok {
-		password, err := base64.StdEncoding.DecodeString(req.Form.Get("passwd"))
-		if err != nil {
-			panic(err)
-		}
-		if u.CompareHash(password) { // The password hashed match
-			token := tokens.Add(u.Username)
-			response(w, true, token)
+	username := req.Form.Get("username")
+	if IsValidString(username) {
+		u, ok := users[username] // Is the user in the db?
+		if ok {
+			password, err := base64.StdEncoding.DecodeString(req.Form.Get("passwd"))
+			if err != nil {
+				panic(err)
+			}
+			if u.CompareHash(password) { // The password hashed match
+				token := tokens.Add(u.Username)
+				response(w, true, token)
+			} else {
+				response(w, false, "Invalid credentials")
+			}
 		} else {
-			response(w, false, "Invalid credentials")
+			response(w, false, "The user doesn't exist")
 		}
 	} else {
-		response(w, false, "The user doesn't exist")
+		response(w, false, "Not valid username, use alphanumeric characters only.")
 	}
 }
 
