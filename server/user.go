@@ -10,10 +10,94 @@ import (
 	"io"
 )
 
+type file struct {
+	From     string `json:"from"`
+	Name     string `json:"name"`
+	Key      string `json:"key"`
+	IsShared bool   `json:"is_shared"`
+}
+
 type user struct {
-	Username       string `json:"name"`
-	PasswordHashed []byte `json:"pass"`
-	Salt           []byte `json:"salt"`
+	Username          string `json:"name"`
+	PasswordHashed    []byte `json:"pass"`
+	Salt              []byte `json:"salt"`
+	PubKey            string `json:"pubkey"`
+	PrivKey           string `json:"privkey"`
+	Files             []file `json:"files"`
+	SharedFilesWithMe []file `json:"shared_files_with_me"`
+}
+
+//MyFiles returns a string with all user files separated by coma
+func (u *user) MyFiles() string {
+	sharedFilesString := ""
+	for _, f := range u.Files {
+		sharedFilesString += f.Name + ","
+	}
+	//Delete last coma
+	if len(sharedFilesString) > 0 {
+		sharedFilesString = sharedFilesString[:len(sharedFilesString)-1]
+	}
+	return sharedFilesString
+}
+
+//SharedFiles returns a string with shared files separated by coma
+func (u *user) SharedFiles() string {
+	sharedFilesString := ""
+	for _, f := range u.Files {
+		if f.IsShared {
+			sharedFilesString += f.Name + ","
+		}
+	}
+	//Delete last coma
+	if len(sharedFilesString) > 0 {
+		sharedFilesString = sharedFilesString[:len(sharedFilesString)-1]
+	}
+	return sharedFilesString
+}
+
+//StopSharing sets a new encryption key for the file and sets IsShared to false
+func (u *user) StopSharing(fileName, newKey string) error {
+	if fileName == "" || newKey == "" {
+		return fmt.Errorf("Not valid credentials")
+	}
+
+	for i, f := range u.Files {
+		if f.Name == fileName {
+			u.Files[i].IsShared = false
+			u.Files[i].Key = newKey
+			return nil
+		}
+	}
+
+	return fmt.Errorf("File %s not found", fileName)
+}
+
+//AddSharedFileWithMe adds a friend file to SharedFilesWithMe
+func (u *user) AddSharedFileWithMe(fileName, key, from string) error {
+	for _, f := range u.SharedFilesWithMe {
+		if f.Name == fileName {
+			return fmt.Errorf("Error: file already shared with %s", u.Username)
+		}
+	}
+	u.SharedFilesWithMe = append(u.SharedFilesWithMe,
+		file{
+			From:     from,
+			Name:     fileName,
+			Key:      key,
+			IsShared: false,
+		})
+	return nil
+}
+
+//DeleteSharedFileWithMe deletes an exfriend file to SharedFilesWithMe
+func (u *user) DeleteSharedFileWithMe(fileName, from string) {
+	for i, f := range u.SharedFilesWithMe {
+		if f.Name == fileName && f.From == from {
+			//Delete f from the files array
+			u.SharedFilesWithMe[i] = u.SharedFilesWithMe[len(u.SharedFilesWithMe)-1]
+			u.SharedFilesWithMe = u.SharedFilesWithMe[:len(u.SharedFilesWithMe)-1]
+		}
+	}
 }
 
 func (u *user) Hash(password, salt []byte) {

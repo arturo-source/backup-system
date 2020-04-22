@@ -29,7 +29,7 @@ func (t *Tokens) Exists(tokenValue string) (int, bool) {
 //the token is valid till 1 day
 func (t *Tokens) Add(username string) string {
 	tomorrow := time.Now().Add(24 * time.Hour)
-	value := string(RandStringBytes())
+	value := string(RandStringBytes(16))
 	token := Token{
 		value:      value,
 		finishDate: tomorrow,

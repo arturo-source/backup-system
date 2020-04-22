@@ -20,9 +20,9 @@ import (
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 //RandStringBytes generates random readable array of bytes to be used as salt
-func RandStringBytes() []byte {
+func RandStringBytes(n int) []byte {
 	rand.Seed(time.Now().UTC().UnixNano())
-	b := make([]byte, 10)
+	b := make([]byte, n)
 	for i := range b {
 		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
@@ -108,6 +108,8 @@ func main() {
 	http.HandleFunc("/register", registerHandler)
 	http.HandleFunc("/login", loginHandler)
 	http.HandleFunc("/backup", backupHandler)
+	http.HandleFunc("/share", shareHandler)
+	http.HandleFunc("/keys", keysHandler)
 
 	err = http.ListenAndServeTLS(":9043", "certificates/server.crt", "certificates/server.key", nil)
 	if err != nil {
@@ -120,15 +122,20 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 	req.ParseForm()
 	w.Header().Set("Content-Type", "text/plain")
 
-	u := user{}
-	u.Username = req.Form.Get("username")
+	u := user{
+		Username:          req.Form.Get("username"),
+		PubKey:            req.Form.Get("pubkey"),
+		PrivKey:           req.Form.Get("privkey"),
+		Files:             make([]file, 0),
+		SharedFilesWithMe: make([]file, 0),
+	}
 	if IsValidString(u.Username) {
 		password, err := base64.StdEncoding.DecodeString(req.Form.Get("passwd"))
 		if err != nil {
-			panic(err)
+			fmt.Println(err)
 		}
 
-		u.Hash(password, RandStringBytes())
+		u.Hash(password, RandStringBytes(10))
 
 		_, ok := users[u.Username] // Is the user in the db?
 		if ok {
@@ -138,18 +145,18 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 			// Parsing the map to array of bytes
 			uJSON, err := json.Marshal(users)
 			if err != nil {
-				panic(err)
+				fmt.Println(err)
 			}
 			// Encrypt the users before saving them
 			encryptedUsers, err := admin.EncryptContent(uJSON)
 			if err != nil {
-				panic(err)
+				fmt.Println(err)
 			}
 
 			// This array of bytes is written in the db
 			err = ioutil.WriteFile("bbdd", encryptedUsers, 0644)
 			if err != nil {
-				panic(err)
+				fmt.Println(err)
 			}
 			token := tokens.Add(u.Username)
 			response(w, true, token)
@@ -171,7 +178,7 @@ func loginHandler(w http.ResponseWriter, req *http.Request) {
 		if ok {
 			password, err := base64.StdEncoding.DecodeString(req.Form.Get("passwd"))
 			if err != nil {
-				panic(err)
+				fmt.Println(err)
 			}
 			if u.CompareHash(password) { // The password hashed match
 				token := tokens.Add(u.Username)
@@ -194,7 +201,7 @@ func isValidUser(req *http.Request) (string, bool) {
 	if ok {
 		password, err := base64.StdEncoding.DecodeString(req.Header.Get("passwd"))
 		if err != nil {
-			panic(err)
+			fmt.Println(err)
 		}
 		if u.CompareHash(password) { // The password hashed match
 			return u.Username + "/", true
@@ -231,24 +238,9 @@ func backupHandler(w http.ResponseWriter, req *http.Request) {
 					w.Write(content)
 				}
 			} else { //If the body is empty: list the content of the backups and response
-				u := tokens.Owner(token) + "/"
-				content := ""
-				checkMkdir(backUpPath + u)
-				file, err := os.Open(backUpPath + u)
-				if err != nil {
-					fmt.Printf("failed opening directory: %s\n", err)
-				}
-				defer file.Close()
-
-				list, _ := file.Readdirnames(0) // 0 to read all files and folders
-				for _, name := range list {
-					content += name + ","
-				}
-				contentLen := len(content)
-				if contentLen > 0 {
-					content = content[:contentLen-1]
-				}
-				response(w, true, content)
+				uStr := tokens.Owner(token) + "/"
+				u := users[uStr]
+				response(w, true, u.MyFiles())
 			}
 
 		case http.MethodPost:
@@ -267,5 +259,58 @@ func backupHandler(w http.ResponseWriter, req *http.Request) {
 				response(w, true, "File saved")
 			}
 		}
+	}
+}
+
+func shareHandler(w http.ResponseWriter, req *http.Request) {
+	token := req.Header.Get("token")
+
+	if _, exists := tokens.Exists(token); exists {
+		uStr := tokens.Owner(token)
+		u := users[uStr]
+
+		switch req.Method {
+		case http.MethodGet:
+			sharedFiles := u.SharedFiles()
+			response(w, true, sharedFiles)
+
+		case http.MethodDelete:
+			fileName := req.Header.Get("filename")
+			newKey := req.Header.Get("newkey")
+
+			err := u.StopSharing(fileName, newKey)
+			if err != nil {
+				response(w, false, err.Error())
+			} else {
+				for _, exfriend := range users {
+					exfriend.DeleteSharedFileWithMe(fileName, uStr)
+				}
+				response(w, true, fileName+" is't shared now")
+			}
+
+		case http.MethodPost:
+			fileName := req.Header.Get("filename")
+			friendStr := req.Header.Get("friend")
+			key := req.Header.Get("key")
+
+			friend := users[friendStr]
+			err := friend.AddSharedFileWithMe(fileName, key, uStr)
+			if err != nil {
+				response(w, false, err.Error())
+			} else {
+				response(w, true, "File shared successfully")
+			}
+		}
+	}
+}
+
+func keysHandler(w http.ResponseWriter, req *http.Request) {
+	token := req.Header.Get("token")
+	if _, exists := tokens.Exists(token); exists {
+		uStr := tokens.Owner(token)
+		u := users[uStr]
+		w.Header().Set("pubkey", u.PubKey)
+		w.Header().Set("privkey", u.PrivKey)
+		response(w, true, "Public and private keys sent successfully")
 	}
 }
