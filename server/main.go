@@ -29,9 +29,29 @@ func RandStringBytes(n int) []byte {
 	return b
 }
 
+func saveDatabase() error {
+	// Parsing the map to array of bytes
+	uJSON, err := json.Marshal(users)
+	if err != nil {
+		return err
+	}
+	// Encrypt the users before saving them
+	encryptedUsers, err := admin.EncryptContent(uJSON)
+	if err != nil {
+		return err
+	}
+
+	// This array of bytes is written in the db
+	err = ioutil.WriteFile("bbdd", encryptedUsers, 0644)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 //IsValidString returns true if the string has valid characters
 func IsValidString(username string) bool {
-	isValid, _ := regexp.MatchString("^[A-Za-z0-9]{8,32}$", username)
+	isValid, _ := regexp.MatchString("^[A-Za-z0-9]{6,32}$", username)
 	return isValid
 }
 
@@ -42,7 +62,7 @@ const backUpPath string = "backups/"
 var tokens Tokens
 
 // Group of users registered on the server
-var users map[string]user
+var users map[string]*user
 
 //The admin to control the server
 var admin user
@@ -89,7 +109,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	users = make(map[string]user)
+	users = make(map[string]*user)
 
 	// If the db is empty, then you don't have to Unmarshal
 	// or decrypt it because it causes error
@@ -110,6 +130,7 @@ func main() {
 	http.HandleFunc("/backup", backupHandler)
 	http.HandleFunc("/share", shareHandler)
 	http.HandleFunc("/keys", keysHandler)
+	http.HandleFunc("/keyfile", keyfileHandler)
 
 	err = http.ListenAndServeTLS(":9043", "certificates/server.crt", "certificates/server.key", nil)
 	if err != nil {
@@ -122,7 +143,7 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 	req.ParseForm()
 	w.Header().Set("Content-Type", "text/plain")
 
-	u := user{
+	u := &user{
 		Username:          req.Form.Get("username"),
 		PubKey:            req.Form.Get("pubkey"),
 		PrivKey:           req.Form.Get("privkey"),
@@ -142,22 +163,12 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 			response(w, false, "User is already registered")
 		} else {
 			users[u.Username] = u
-			// Parsing the map to array of bytes
-			uJSON, err := json.Marshal(users)
-			if err != nil {
-				fmt.Println(err)
-			}
-			// Encrypt the users before saving them
-			encryptedUsers, err := admin.EncryptContent(uJSON)
+
+			err := saveDatabase()
 			if err != nil {
 				fmt.Println(err)
 			}
 
-			// This array of bytes is written in the db
-			err = ioutil.WriteFile("bbdd", encryptedUsers, 0644)
-			if err != nil {
-				fmt.Println(err)
-			}
 			token := tokens.Add(u.Username)
 			response(w, true, token)
 		}
@@ -194,22 +205,6 @@ func loginHandler(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// THIS METHOD IS DEPRECATED BECAUSE NOW WE USE TOKENS
-// Return a string which is the username directory and true if the password is from the user
-func isValidUser(req *http.Request) (string, bool) {
-	u, ok := users[req.Header.Get("username")] // Is the user in the db?
-	if ok {
-		password, err := base64.StdEncoding.DecodeString(req.Header.Get("passwd"))
-		if err != nil {
-			fmt.Println(err)
-		}
-		if u.CompareHash(password) { // The password hashed match
-			return u.Username + "/", true
-		}
-	}
-	return "", false
-}
-
 // Creates the directory if it doesn't exists
 func checkMkdir(path string) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -219,7 +214,12 @@ func checkMkdir(path string) {
 
 func backupHandler(w http.ResponseWriter, req *http.Request) {
 	token := req.Header.Get("token")
+
 	if _, exists := tokens.Exists(token); exists {
+		uStr := tokens.Owner(token)
+		u := users[uStr]
+		uStr += "/"
+
 		switch req.Method {
 		case http.MethodGet:
 			body, err := ioutil.ReadAll(req.Body)
@@ -228,35 +228,57 @@ func backupHandler(w http.ResponseWriter, req *http.Request) {
 			}
 			//The content of the body is the back up name so response the content of the backup
 			if len(body) > 0 {
-				u := tokens.Owner(token) + "/"
+				//If the file is from other user, it's the name, if it's mine from=="me"
+				from := req.Header.Get("from")
 				//Read the content of the file
-				content, err := ioutil.ReadFile(backUpPath + u + string(body))
+				var path string
+				if from == "me" {
+					path = backUpPath + uStr + string(body)
+				} else {
+					path = backUpPath + from + string(body)
+				}
+				content, err := ioutil.ReadFile(path)
 				if err != nil {
 					response(w, false, "Back up not found")
 					fmt.Println(err)
 				} else {
+					w.Header().Add("key", u.GetKey(path))
 					w.Write(content)
 				}
 			} else { //If the body is empty: list the content of the backups and response
-				uStr := tokens.Owner(token) + "/"
-				u := users[uStr]
 				response(w, true, u.MyFiles())
 			}
 
 		case http.MethodPost:
-			checkMkdir(backUpPath)
-			body, err := ioutil.ReadAll(req.Body)
-			if err != nil {
-				response(w, false, "The file is empty")
+			key := req.Header.Get("key")
+			if key == "" {
+				response(w, false, "Missing encryption key")
 			} else {
-				u := tokens.Owner(token) + "/"
-				checkMkdir(backUpPath + u)
-				//Write the content on the file
-				err = ioutil.WriteFile(backUpPath+u+time.Now().String(), body, 0644)
+				checkMkdir(backUpPath)
+				body, err := ioutil.ReadAll(req.Body)
 				if err != nil {
-					fmt.Println(err)
+					response(w, false, "The file is empty")
+				} else {
+					checkMkdir(backUpPath + uStr)
+					//Write the content on the file
+					path := backUpPath + uStr + time.Now().String()
+					err = ioutil.WriteFile(path, body, 0644)
+					if err != nil {
+						fmt.Println(err)
+					}
+					//Save in the database
+					u.Files = append(u.Files, file{
+						From:     "Me",
+						Name:     path,
+						Key:      key,
+						IsShared: false,
+					})
+					err = saveDatabase()
+					if err != nil {
+						fmt.Println(err)
+					}
+					response(w, true, "File saved")
 				}
-				response(w, true, "File saved")
 			}
 		}
 	}
@@ -307,10 +329,42 @@ func shareHandler(w http.ResponseWriter, req *http.Request) {
 func keysHandler(w http.ResponseWriter, req *http.Request) {
 	token := req.Header.Get("token")
 	if _, exists := tokens.Exists(token); exists {
-		uStr := tokens.Owner(token)
-		u := users[uStr]
-		w.Header().Set("pubkey", u.PubKey)
-		w.Header().Set("privkey", u.PrivKey)
-		response(w, true, "Public and private keys sent successfully")
+		//If it wants the own keys from=="me", if it wants public key from a friend from is the friend's name
+		from := req.Header.Get("from")
+		if from == "me" {
+			uStr := tokens.Owner(token)
+			u := users[uStr]
+			w.Header().Add("pubkey", u.PubKey)
+			w.Header().Add("privkey", u.PrivKey)
+			response(w, true, "Public and private keys sent successfully")
+		} else {
+			u, exists := users[from]
+			if exists {
+				w.Header().Add("pubkey", u.PubKey)
+				response(w, true, "Public key sent successfully")
+			} else {
+				response(w, false, fmt.Sprintf("Friend %s not found", from))
+			}
+		}
+
+	}
+}
+
+func keyfileHandler(w http.ResponseWriter, req *http.Request) {
+	token := req.Header.Get("token")
+	if _, exists := tokens.Exists(token); exists {
+		filename := req.Header.Get("filename")
+		if filename == "" {
+			response(w, false, "Missing filename.")
+		} else {
+			uStr := tokens.Owner(token)
+			u := users[uStr]
+			key := u.GetKey(filename)
+			if key == "" {
+				response(w, false, "File not found")
+			} else {
+				response(w, true, key)
+			}
+		}
 	}
 }

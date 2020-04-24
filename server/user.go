@@ -27,6 +27,21 @@ type user struct {
 	SharedFilesWithMe []file `json:"shared_files_with_me"`
 }
 
+//GetKey receives filename and returns the key or empty string if the file doesn't exist
+func (u *user) GetKey(filename string) string {
+	for _, f := range u.Files {
+		if filename == f.Name {
+			return f.Key
+		}
+	}
+	for _, f := range u.SharedFilesWithMe {
+		if filename == f.Name {
+			return f.Key
+		}
+	}
+	return ""
+}
+
 //MyFiles returns a string with all user files separated by coma
 func (u *user) MyFiles() string {
 	sharedFilesString := ""
