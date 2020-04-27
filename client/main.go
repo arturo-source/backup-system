@@ -32,6 +32,8 @@ func main() {
 	ui.Bind("chargeViewDownload", myui.chargeViewDownload)
 	ui.Bind("SendBackUpToServer", myui.u.SendBackUpToServer)
 	ui.Bind("RecoverBackUp", myui.u.RecoverBackUp)
+	ui.Bind("chargeDirectoryFirst", myui.chargeDirectoryFirst)
+	ui.Bind("chargeDirectory", chargeDirectory)
 
 	// Wait until the interrupt signal arrives or browser window is closed
 	sigc := make(chan os.Signal)

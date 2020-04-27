@@ -21,7 +21,10 @@
 			text-align: center;
 			border-radius: 10px;
 		}
-
+		.directory{
+			width: 400px;
+			height: 400px;
+		}
 		label {
 			color: azure;
 		}
@@ -128,7 +131,13 @@
 			<div class="upload-btn-wrapper action-button shadow animate blue">Upload
 				<input type="file" id="file" name="myfile" />
 			</div><br>
-			<input type="text" id="text">
+			<label>List of Downloads:</label>
+			<select id="select" name="selectdirectory" onchange="callChargeDirectory()">
+				{{range .}}
+				<option value="{{.Directory}}" id="{{.Directory}}" >{{.Directory}}</option>
+				{{end}}
+			</select>
+			<br>
 			<input type="submit" id="submit" class="action-button shadow animate blue" value="Submit">
 		</form>
 		<br>
@@ -137,13 +146,21 @@
 	<!-- Connect UI actions to Go functions -->
 	<script>
 
-		const login = document.getElementById("submit");
+		const submit = document.getElementById("submit");
 		const file = document.getElementById("file");
 		const text = document.getElementById("text");
+		const select = document.getElementById("select");
+		const optionBack = new Option('..','back');
+		const optionNull= new Option('','null');
+		var countSlash ;
 		var response;
 
-		login.addEventListener('click', async () => {
-			response = await SendBackUpToServer(text.value);// Call Go function
+
+		submit.addEventListener('click', async () => {
+			var path = select.options[select.selectedIndex].text;
+			path = path.substring(1,path.length -1);
+			alert(path);
+			response = await SendBackUpToServer(path);// Call Go function
 			if (response.Ok) {
 				//chargeView('www/menu.html');
 				console.log("todo bien madafaka");
@@ -152,6 +169,46 @@
 			}
 		});
 
+
+		async function callChargeDirectory(){
+			var x = document.getElementById("select").value;
+			var ruta ;
+
+			if(x == "back"){
+				ruta = document.getElementById("select").options;
+				var ruta2 = ruta[2].text;
+				var regex = new RegExp(".+\/");
+				var subpath = (regex.exec(ruta2).toString());
+				subpath = subpath.substring(0,subpath.length -1);
+				countSlash = subpath.match(/\//g).length;
+
+				if(countSlash == 1 ){
+					ruta = "/";
+				}else{
+					subpath = (regex.exec(subpath).toString());
+					ruta    = subpath.substring(0,subpath.length -1);
+				}
+			}
+			else{
+				ruta = x;
+			}
+
+			response = await chargeDirectory(ruta);
+			if(response.length != 0){
+				select.options.length = 0;
+				for(index in response){
+					select.options[select.options.length] = new Option(response[index].Directory, response[index].Directory);
+				}
+			}
+			if(ruta != "/"){
+				select.insertBefore(optionBack,select.firstChild);
+				optionNull.text = "*"+ruta+"*";
+				select.insertBefore(optionNull,select.firstChild);
+				select.options[0].selected = true;
+			}
+
+
+		}
 	</script>
 </body>
 
