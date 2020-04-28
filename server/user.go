@@ -44,23 +44,29 @@ func (u *user) GetKey(filename string) string {
 
 //MyFiles returns a string with all user files separated by coma
 func (u *user) MyFiles() string {
-	sharedFilesString := ""
+	pathLen := len(backUpPath) + len(u.Username) + 1
+	files := ""
 	for _, f := range u.Files {
-		sharedFilesString += f.Name + ","
+		files += f.Name[pathLen:] + ","
+	}
+	for _, f := range u.SharedFilesWithMe {
+		pathLen = len(backUpPath) + len(f.From) + 1
+		files += f.Name[pathLen:] + ","
 	}
 	//Delete last coma
-	if len(sharedFilesString) > 0 {
-		sharedFilesString = sharedFilesString[:len(sharedFilesString)-1]
+	if len(files) > 0 {
+		files = files[:len(files)-1]
 	}
-	return sharedFilesString
+	return files
 }
 
 //SharedFiles returns a string with shared files separated by coma
 func (u *user) SharedFiles() string {
+	pathLen := len(backUpPath) + len(u.Username) + 1
 	sharedFilesString := ""
 	for _, f := range u.Files {
 		if f.IsShared {
-			sharedFilesString += f.Name + ","
+			sharedFilesString += f.Name[pathLen:] + ","
 		}
 	}
 	//Delete last coma
