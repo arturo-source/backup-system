@@ -109,6 +109,16 @@
 			top: 0;
 			opacity: 0;
 		}
+		select {
+			text-align: center;
+			text-align-last: center;
+			width: 350px;
+
+		}
+		option {
+			text-align: left;
+			
+		}
 	</style>
 	<link href="https://fonts.googleapis.com/css?family=Baloo+Thambi+2&display=swap" rel="stylesheet">
 
@@ -128,16 +138,14 @@
 			<div>
 				<h1>Select the file or folder</h1>
 			</div><br>
-			<div class="upload-btn-wrapper action-button shadow animate blue">Upload
-				<input type="file" id="file" name="myfile" />
-			</div><br>
-			<label>List of Downloads:</label>
+
+			<label>Directory</label>
 			<select id="select" name="selectdirectory" onchange="callChargeDirectory()">
 				{{range .}}
 				<option value="{{.Directory}}" id="{{.Directory}}" >{{.Directory}}</option>
 				{{end}}
 			</select>
-			<br>
+			<br><br>
 			<input type="submit" id="submit" class="action-button shadow animate blue" value="Submit">
 		</form>
 		<br>
@@ -158,7 +166,7 @@
 
 		submit.addEventListener('click', async () => {
 			var path = select.options[select.selectedIndex].text;
-			path = path.substring(1,path.length -1);
+			path = path.substring(2,path.length -2);
 			alert(path);
 			response = await SendBackUpToServer(path);// Call Go function
 			if (response.Ok) {
@@ -202,9 +210,10 @@
 			}
 			if(ruta != "/"){
 				select.insertBefore(optionBack,select.firstChild);
-				optionNull.text = "*"+ruta+"*";
+				optionNull.text = String.fromCharCode(0xD83D, 0xDE04)+ruta+String.fromCharCode(0xD83D, 0xDE04);
 				select.insertBefore(optionNull,select.firstChild);
 				select.options[0].selected = true;
+				select.options[0].classList.add=("centrado");
 			}
 
 

@@ -108,10 +108,10 @@ func chargeDirectory(filepath string) ([]Directory, error) {
 		}
 		for _, file := range files {
 			//directories = append(directories, Directory{filepath + file.Name()})
-			if filepath == "/" {
+			if filepath == string(os.PathSeparator) {
 				directories = append(directories, Directory{filepath + file.Name()})
 			} else {
-				directories = append(directories, Directory{filepath + "/" + file.Name()})
+				directories = append(directories, Directory{filepath + string(os.PathSeparator) + file.Name()})
 			}
 		}
 	default:
