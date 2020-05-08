@@ -95,6 +95,12 @@ func (u *user) StopSharing(fileName, newKey string) error {
 
 //AddSharedFileWithMe adds a friend file to SharedFilesWithMe
 func (u *user) AddSharedFileWithMe(fileName, key, from string) error {
+	uFrom := users[from]
+	for i, f := range uFrom.Files {
+		if f.Name == fileName {
+			uFrom.Files[i].IsShared = true
+		}
+	}
 	for _, f := range u.SharedFilesWithMe {
 		if f.Name == fileName {
 			return fmt.Errorf("Error: file already shared with %s", u.Username)
