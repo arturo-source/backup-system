@@ -24,9 +24,6 @@
 				<div>
 					<label>List of Downloads:</label>
 					<select id="downloads" name="downloads">
-						{{range .}}
-						<option value="{{.Date}}" id="{{.Date}}" >{{.Date}}</option>
-						{{end}}
 					</select>
 				</div>
 
@@ -39,13 +36,16 @@
 		<script>
 			
 		const login = document.getElementById("submit");
-		const downloads = document.getElementById("downloads");
+		const select = document.getElementById("downloads");
 		var response;
 	
-		const select = downloads.options[downloads.selectedIndex].text;
 		
+		callChargeFiles();
+
 		login.addEventListener('click', async () => {
-			response = await RecoverBackUp(select);// Call Go function
+			var path = select.options[select.selectedIndex].value;
+
+			response = await RecoverBackUp(path);// Call Go function
 			if (response.Ok) {
 				//chargeView('www/menu.html');
 				console.log("todo bien madafaka");
@@ -53,6 +53,20 @@
 				console.log("mal bajado coleguita");
 			}
 		});
+
+
+		async function callChargeFiles(){
+
+			response = await ListFiles();
+
+			var files = response.Msg.split(',');
+			var fileIcon = String.fromCodePoint(0x1F5C1);
+			for(index in files){
+				var regexFile = new RegExp('[0-9]{1,4}-[0-9]{1,2}-[0-9]{1,2} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}');
+				var textFile = (regexFile.exec(files[index]));
+				select.options[select.options.length] = new Option(fileIcon + textFile, files[index]);
+			}
+		}
 		</script>
 	</body>
 </html>

@@ -97,6 +97,7 @@ func (myui *MyUI) chargeDirectoryFirst(filePath string) {
 //Directory is needed to show the date of the backups
 type Directory struct {
 	Directory string
+	IsDir     bool
 }
 
 func chargeDirectory(filepath string) ([]Directory, error) {
@@ -105,28 +106,35 @@ func chargeDirectory(filepath string) ([]Directory, error) {
 
 	directories := make([]Directory, 0)
 
-	fi, err := os.Stat(filepath)
-	switch {
-	case err != nil:
-		// handle the error and return
-	case fi.IsDir():
-		// it's a directory
+	if filepath != "Select a path" {
+		fi, err := os.Stat(filepath)
+		switch {
+		case err != nil:
+			// handle the error and return
+		case fi.IsDir():
+			// it's a directory
 
-		files, err := ioutil.ReadDir(filepath)
+			files, err := ioutil.ReadDir(filepath)
 
-		if err != nil {
-			return directories, err
-		}
-		for _, file := range files {
-			//directories = append(directories, Directory{filepath + file.Name()})
-			if filepath == string(os.PathSeparator) {
-				directories = append(directories, Directory{filepath + file.Name()})
-			} else {
-				directories = append(directories, Directory{filepath + string(os.PathSeparator) + file.Name()})
+			if err != nil {
+				return directories, err
 			}
+			if filepath == string(os.PathSeparator) {
+				directories = append(directories, Directory{string(os.PathSeparator), false})
+			}
+			for _, file := range files {
+				//directories = append(directories, Directory{filepath + file.Name()})
+				if filepath == string(os.PathSeparator) {
+
+					directories = append(directories, Directory{filepath + file.Name(), file.IsDir()})
+				} else {
+					directories = append(directories, Directory{filepath + string(os.PathSeparator) + file.Name(), file.IsDir()})
+				}
+			}
+		default:
+			// it's not a directory
 		}
-	default:
-		// it's not a directory
 	}
+
 	return directories, nil
 }
