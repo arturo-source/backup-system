@@ -51,8 +51,6 @@ func (u *user) MyFiles() string {
 		files += f.Name[pathLen:] + ","
 	}
 	for _, f := range u.SharedFilesWithMe {
-		fmt.Println(f.Name)
-
 		pathLen = len(backUpPath) + len(f.From) + 1
 		files += f.Name[pathLen:] + ","
 	}

@@ -302,6 +302,7 @@ func shareHandler(w http.ResponseWriter, req *http.Request) {
 
 		case http.MethodDelete:
 			fileName := req.Header.Get("filename")
+			fileName = u.GetFullPath(fileName)
 			newKey := req.Header.Get("newkey")
 
 			err := u.StopSharing(fileName, newKey)
