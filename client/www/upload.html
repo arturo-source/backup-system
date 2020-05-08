@@ -222,7 +222,7 @@
 						}
 						textFile = (regexFile.exec(response[index].Directory));
 					}
-					select.options[select.options.length] = new Option(fileIcon + textFile, response[index].Directory);
+					select.add(new Option(fileIcon + textFile, response[index].Directory));
 				}
 			}
 			if(ruta != "/"){

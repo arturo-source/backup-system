@@ -145,8 +145,8 @@
 			<br>
 			<label>User to share</label>
 			<input type="text" id="text">
-			<span style="color: red;" id="errorText"></span><br>
-			<br><br>
+			<span style="color: red;" id="errorText"></span><br><br>
+			
 			<input type="submit" id="submit" class="action-button shadow animate blue" value="Submit">
 		</form>
 		<br>
@@ -166,8 +166,6 @@
 
 		submit.addEventListener('click', async () => {
 			var path = select.options[select.selectedIndex].value;
-			alert(path);
-			alert(text.value);
 			response = await ShareFileWith(path,text.value);// Call Go function
 			if (response.Ok) {
 				//chargeView('www/menu.html');
@@ -183,13 +181,17 @@
 		async function callChargeFiles(){
 
 			response = await ListFiles();
-
 			var files = response.Msg.split(',');
-			var fileIcon = String.fromCodePoint(0x1F5C1);
-			for(index in files){
-				var regexFile = new RegExp('[0-9]{1,4}-[0-9]{1,2}-[0-9]{1,2} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}');
-				var textFile = (regexFile.exec(files[index]));
-				select.options[select.options.length] = new Option(fileIcon + textFile, files[index]);
+			
+			if (files == "") {
+				select.add(new Option(String.fromCodePoint(0x1F612)+"No Files"+String.fromCodePoint(0x1F612)));
+			}else{
+				var fileIcon = String.fromCodePoint(0x1F5C1);
+				for(index in files){
+					var regexFile = new RegExp('[0-9]{1,4}-[0-9]{1,2}-[0-9]{1,2} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}');
+					var textFile = (regexFile.exec(files[index]));
+					select.add(new Option(fileIcon + textFile, files[index]));
+				}
 			}
 		}
 	</script>

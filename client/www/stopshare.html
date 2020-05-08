@@ -144,7 +144,7 @@
 			</select>
 			<br>
 			<span style="color: red;" id="errorText"></span><br>
-			<br><br>
+		
 			<input type="submit" id="submit" class="action-button shadow animate blue" value="Submit">
 		</form>
 		<br>
@@ -180,13 +180,17 @@
 		async function callChargeFiles(){
 
 			response = await GetSharedFiles();
-
 			var files = response.Msg.split(',');
-			var fileIcon = String.fromCodePoint(0x1F5C1);
-			for(index in files){
-				var regexFile = new RegExp('[0-9]{1,4}-[0-9]{1,2}-[0-9]{1,2} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}');
-				var textFile = (regexFile.exec(files[index]));
-				select.options[select.options.length] = new Option(fileIcon + textFile, files[index]);
+			
+			if (files == "") {
+				select.add(new Option(String.fromCodePoint(0x1F612)+"No Files"+String.fromCodePoint(0x1F612)));
+			}else{
+				var fileIcon = String.fromCodePoint(0x1F5C1);
+				for(index in files){
+					var regexFile = new RegExp('[0-9]{1,4}-[0-9]{1,2}-[0-9]{1,2} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}');
+					var textFile = (regexFile.exec(files[index]));
+					select.add(new Option(fileIcon + textFile, files[index]));
+				}
 			}
 		}
 	</script>
