@@ -367,6 +367,7 @@ func (u *user) ShareFileWith(filename, username string) (resp, error) {
 	response := resp{}
 	req, err := http.NewRequest("GET", "https://localhost:9043/keyfile", nil)
 	req.Header.Add("token", u.token)
+	req.Header.Add("filename", filename)
 	res, err := u.httpclient.Do(req)
 	if err != nil {
 		return response, err
@@ -424,7 +425,7 @@ func (u *user) shareFile(filename, username, key string) (resp, error) {
 	return response, nil
 }
 func (u *user) getFriendPubKey(username string) (*rsa.PublicKey, error) {
-	var pubKey *rsa.PublicKey
+	pubKey := &rsa.PublicKey{}
 	response := resp{}
 	req, err := http.NewRequest("GET", "https://localhost:9043/keys", nil)
 	req.Header.Add("token", u.token)
@@ -443,7 +444,10 @@ func (u *user) getFriendPubKey(username string) (*rsa.PublicKey, error) {
 	json.Unmarshal(body, &response)
 
 	if response.Ok {
-		json.Unmarshal(decode64(res.Header.Get("pubkey")), pubKey)
+		err = json.Unmarshal(uncompressData(decode64(res.Header.Get("pubkey"))), pubKey)
+		if err != nil {
+			return pubKey, err
+		}
 		return pubKey, nil
 	}
 	return pubKey, fmt.Errorf("Error: %s", response.Msg)

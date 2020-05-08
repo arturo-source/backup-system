@@ -358,6 +358,7 @@ func keyfileHandler(w http.ResponseWriter, req *http.Request) {
 			response(w, false, "Missing filename.")
 		} else {
 			uStr := tokens.Owner(token)
+			filename = fmt.Sprintf("%s%s/%s", backUpPath, uStr, filename)
 			u := users[uStr]
 			key := u.GetKey(filename)
 			if key == "" {
