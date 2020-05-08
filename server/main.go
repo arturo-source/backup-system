@@ -228,15 +228,19 @@ func backupHandler(w http.ResponseWriter, req *http.Request) {
 			}
 			//The content of the body is the back up name so response the content of the backup
 			if len(body) > 0 {
+				filename := string(body)
+
+				path := u.GetFullPath(filename)
+
 				//If the file is from other user, it's the name, if it's mine from=="me"
-				from := req.Header.Get("from")
+				// from := req.Header.Get("from")
 				//Read the content of the file
-				var path string
-				if from == "me" {
-					path = backUpPath + uStr + string(body)
-				} else {
-					path = backUpPath + from + string(body)
-				}
+				// var path string
+				// if from == "me" {
+				// 	path = backUpPath + uStr + string(body)
+				// } else {
+				// 	path = backUpPath + from + string(body)
+				// }
 				content, err := ioutil.ReadFile(path)
 				if err != nil {
 					response(w, false, "Back up not found")
@@ -312,8 +316,8 @@ func shareHandler(w http.ResponseWriter, req *http.Request) {
 
 		case http.MethodPost:
 			fileName := req.Header.Get("filename")
-			fileName = fmt.Sprintf("%s%s/%s", backUpPath, uStr, fileName)
 			friendStr := req.Header.Get("friend")
+			fileName = fmt.Sprintf("%s%s/%s", backUpPath, uStr, fileName)
 			key := req.Header.Get("key")
 
 			friend := users[friendStr]

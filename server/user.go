@@ -47,9 +47,12 @@ func (u *user) MyFiles() string {
 	pathLen := len(backUpPath) + len(u.Username) + 1
 	files := ""
 	for _, f := range u.Files {
+		fmt.Println(f.Name)
 		files += f.Name[pathLen:] + ","
 	}
 	for _, f := range u.SharedFilesWithMe {
+		fmt.Println(f.Name)
+
 		pathLen = len(backUpPath) + len(f.From) + 1
 		files += f.Name[pathLen:] + ","
 	}
@@ -58,6 +61,22 @@ func (u *user) MyFiles() string {
 		files = files[:len(files)-1]
 	}
 	return files
+}
+
+func (u *user) GetFullPath(filename string) string {
+	pathLen := len(backUpPath) + len(u.Username) + 1
+	for _, f := range u.Files {
+		if filename == f.Name[pathLen:] {
+			return f.Name
+		}
+	}
+	for _, f := range u.SharedFilesWithMe {
+		pathLen = len(backUpPath) + len(f.From) + 1
+		if filename == f.Name[pathLen:] {
+			return f.Name
+		}
+	}
+	return ""
 }
 
 //SharedFiles returns a string with shared files separated by coma
