@@ -273,14 +273,17 @@
 						time = time + period[i].toString() + labels[i];
 					}
 				}
-
-				response = await addBackUp(path, time);
-				if (response.Ok) {                          //     ARREGLAR  response.Ok esta mal
-					console.log("todo bien madafaka");
-					document.getElementById("infoText").innerText = "Backup correctly done."; 
-				} else {
-					console.log("mal subido coleguita");
-					document.getElementById("infoText").innerText = response.Msg;
+				try{
+					response = await addBackUp(path, time);
+					if (response.Ok) {                          //     ARREGLAR  response.Ok esta mal
+						console.log("todo bien madafaka");
+						document.getElementById("infoText").innerText = "Backup correctly done."; 
+					} else {
+						console.log("mal subido coleguita");
+						document.getElementById("infoText").innerText = response.Msg;
+					}
+				}catch(error){
+					document.getElementById("infoText").innerText = error; 
 				}
 			}
 			else{

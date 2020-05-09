@@ -43,14 +43,18 @@
 
 		submit.addEventListener('click', async () => {
 			var path = select.options[select.selectedIndex];
-
-			response = await RecoverBackUp(path.value);// Call Go function
-			if (response.Ok) {
-				//chargeView('www/menu.html');
-				document.getElementById("infoText").innerText = "Downloaded " + path.text + " in client/recover/ directory."; 
-			} else {
-				document.getElementById("infoText").innerText = response.Msg; 
+			try{
+				response = await RecoverBackUp(path.value);// Call Go function
+				if (response.Ok) {
+					//chargeView('www/menu.html');
+					document.getElementById("infoText").innerText = "Downloaded " + path.text + " in client/recover/ directory."; 
+				} else {
+					document.getElementById("infoText").innerText = response.Msg; 
+				}
+			}catch(error){
+				document.getElementById("infoText").innerText = error; 
 			}
+
 		});
 
 		async function callChargeFiles(){

@@ -163,15 +163,18 @@
 
 		submit.addEventListener('click', async () => {
 			var path = select.options[select.selectedIndex].value;
-			alert(path);
-			response = await StopSharingFile(path);// Call Go function
-			if (response.Ok) {
-				//chargeView('www/menu.html');
-				console.log("todo bien madafaka");
-				document.getElementById("infoText").innerText = "Stopped sharing correctly"; 
-			} else {
-				console.log("mal subido coleguita");
-				document.getElementById("infoText").innerText = response.Msg; 
+			try{
+				response = await StopSharingFile(path);// Call Go function
+				if (response.Ok) {
+					//chargeView('www/menu.html');
+					console.log("todo bien madafaka");
+					document.getElementById("infoText").innerText = "Stopped sharing correctly"; 
+				} else {
+					console.log("mal subido coleguita");
+					document.getElementById("infoText").innerText = response.Msg; 
+				}
+			}catch(error){
+				document.getElementById("infoText").innerText = error; 
 			}
 		});
 

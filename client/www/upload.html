@@ -172,12 +172,16 @@
 			var path = select.options[select.selectedIndex].text;
 			path = path.substring(2,path.length -2);
 			if(path != "Select a pa"){
-				response = await SendBackUpToServer(path);// Call Go function
-				if (response.Ok) {
-					//chargeView('www/menu.html');
-					document.getElementById("infoText").innerText = "Backup correctly done."; 
-				} else {
-					document.getElementById("infoText").innerText = response.Msg; 
+				try{
+					response = await SendBackUpToServer(path);// Call Go function
+					if (response.Ok) {
+						//chargeView('www/menu.html');
+						document.getElementById("infoText").innerText = "Backup correctly done."; 
+					} else {
+						document.getElementById("infoText").innerText = response.Msg; 
+					}
+				}catch(error){
+					document.getElementById("infoText").innerText = error; 
 				}
 			}
 			else{
