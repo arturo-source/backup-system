@@ -26,8 +26,9 @@
 					<select id="downloads" name="downloads">
 					</select>
 				</div><br>
+				<span style="color: red;" id="infoText"></span><br><br>
 
-			  <input type="submit" id="submit" class="action-button shadow animate blue" value="Submit">
+			  <input type="submit" id="submit" class="action-button shadow animate blue" value="Download">
 			</form> 
 		<br>
 		</div>
@@ -43,14 +44,14 @@
 		callChargeFiles();
 
 		login.addEventListener('click', async () => {
-			var path = select.options[select.selectedIndex].value;
+			var path = select.options[select.selectedIndex];
 
-			response = await RecoverBackUp(path);// Call Go function
+			response = await RecoverBackUp(path.value);// Call Go function
 			if (response.Ok) {
 				//chargeView('www/menu.html');
-				console.log("todo bien madafaka");
+				document.getElementById("infoText").innerText = "Downloaded " + path.text + " in client/recover/ directory."; 
 			} else {
-				console.log("mal bajado coleguita");
+				document.getElementById("infoText").innerText = response.Msg; 
 			}
 		});
 

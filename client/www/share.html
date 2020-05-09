@@ -144,10 +144,10 @@
 			</select>
 			<br>
 			<label>User to share</label>
-			<input type="text" id="text">
-			<span style="color: red;" id="errorText"></span><br><br>
+			<input type="text" id="friend">
+			<span style="color: red;" id="infoText"></span><br><br>
 			
-			<input type="submit" id="submit" class="action-button shadow animate blue" value="Submit">
+			<input type="submit" id="submit" class="action-button shadow animate blue" value="Share">
 		</form>
 		<br>
 	</div>
@@ -157,7 +157,7 @@
 
 		const submit = document.getElementById("submit");
 		const file = document.getElementById("file");
-		const text = document.getElementById("text");
+		const friend = document.getElementById("friend");
 		const select = document.getElementById("select");
 
 		var response;
@@ -166,13 +166,12 @@
 
 		submit.addEventListener('click', async () => {
 			var path = select.options[select.selectedIndex].value;
-			response = await ShareFileWith(path,text.value);// Call Go function
+			response = await ShareFileWith(path,friend.value);// Call Go function
 			if (response.Ok) {
 				//chargeView('www/menu.html');
-				console.log("todo bien madafaka");
+				document.getElementById("infoText").innerText = "Shared with " + friend.value + " correctly."; 
 			} else {
-				console.log("mal subido coleguita");
-				document.getElementById("errorText").innerText = response.Msg; 
+				document.getElementById("infoText").innerText = response.Msg; 
 			}
 		});
 

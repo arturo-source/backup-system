@@ -145,8 +145,10 @@
 				<option value="{{.Directory}}" id="{{.Directory}}" >{{.Directory}}</option>
 				{{end}}
 			</select>
-			<br><br>
-			<input type="submit" id="submit" class="action-button shadow animate blue" value="Submit">
+			<br>
+			<span style="color: red;" id="infoText"></span><br>
+			
+			<input type="submit" id="submit" class="action-button shadow animate blue" value="Upload">
 		</form>
 		<br>
 	</div>
@@ -172,9 +174,9 @@
 			response = await SendBackUpToServer(path);// Call Go function
 			if (response.Ok) {
 				//chargeView('www/menu.html');
-				console.log("todo bien madafaka");
+				document.getElementById("infoText").innerText = "Backup correctly done."; 
 			} else {
-				console.log("mal subido coleguita");
+				document.getElementById("infoText").innerText = response.Msg; 
 			}
 		});
 
