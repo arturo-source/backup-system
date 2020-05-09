@@ -456,10 +456,14 @@ func (u *user) getFriendPubKey(username string) (*rsa.PublicKey, error) {
 //StopSharingFile receives a filename and stops sharing it for all people
 func (u *user) StopSharingFile(filename string) (resp, error) {
 	response := resp{}
+	key, err := rsa.EncryptOAEP(sha256.New(), rand.Reader, u.pubKey, RandStringBytes(16), nil)
+	if err != nil {
+		return response, err
+	}
 	req, err := http.NewRequest("DELETE", "https://localhost:9043/share", nil)
 	req.Header.Add("token", u.token)
 	req.Header.Add("filename", filename)
-	req.Header.Add("newkey", encode64(RandStringBytes(16)))
+	req.Header.Add("newkey", encode64(key))
 	res, err := u.httpclient.Do(req)
 	if err != nil {
 		return response, err
