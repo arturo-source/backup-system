@@ -318,7 +318,7 @@ func shareHandler(w http.ResponseWriter, req *http.Request) {
 		case http.MethodPost:
 			fileName := req.Header.Get("filename")
 			friendStr := req.Header.Get("friend")
-			fileName = fmt.Sprintf("%s%s/%s", backUpPath, uStr, fileName)
+			fileName = u.GetFullPath(fileName)
 			key := req.Header.Get("key")
 
 			friend := users[friendStr]
