@@ -143,11 +143,10 @@
 			<select id="select" name="selectdirectory">
 			</select>
 			<br>
-			<label>User to share</label>
-			<input type="text" id="friend">
-			<span style="color: red;" id="infoText"></span><br><br>
-			
-			<input type="submit" id="submit" class="action-button shadow animate blue" value="Share">
+			<label id="labelfriend">User to share</label>
+			<input type="text" id="friend"><br><br>
+			<input type="submit" id="submit" class="action-button shadow animate blue" value="Share"><br>
+			<span style="color: red;" id="infoText"></span>
 		</form>
 		<br>
 	</div>
@@ -158,22 +157,30 @@
 		const submit = document.getElementById("submit");
 		const file = document.getElementById("file");
 		const friend = document.getElementById("friend");
+		const labelfriend = document.getElementById("labelfriend");
 		const select = document.getElementById("select");
 
 		var response;
 
 		callChargeFiles();
-
-		submit.addEventListener('click', async () => {
+		
+			submit.addEventListener('click', async () => {
 			var path = select.options[select.selectedIndex].value;
-			response = await ShareFileWith(path,friend.value);// Call Go function
-			if (response.Ok) {
-				//chargeView('www/menu.html');
-				document.getElementById("infoText").innerText = "Shared with " + friend.value + " correctly."; 
-			} else {
-				document.getElementById("infoText").innerText = response.Msg; 
+			try{
+				response = await ShareFileWith(path,friend.value);// Call Go function
+
+				if (response.Ok) {
+					document.getElementById("infoText").innerText = "Shared with " + friend.value + " correctly."; 
+				} else {
+					document.getElementById("infoText").innerText = response.Msg; 
+				}
+			}catch(error){
+				document.getElementById("infoText").innerText = error; 
 			}
+
 		});
+
+
 
 
 
@@ -184,6 +191,9 @@
 			
 			if (files == "") {
 				select.add(new Option(String.fromCodePoint(0x1F612)+"No Files"+String.fromCodePoint(0x1F612)));
+				submit.style ="display:none";
+				friend.style ="display:none";
+				labelfriend.style ="display:none";
 			}else{
 				var fileIcon = String.fromCodePoint(0x1F5C1);
 				for(index in files){

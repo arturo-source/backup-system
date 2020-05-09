@@ -232,7 +232,7 @@
 
 
 		<input type="submit" class="action-button shadow animate blue" value="Submit" id="submit"><br>
-		<span style="color: red;" id="infoText"></span><br><br>
+		<span style="color: red;" id="infoText"></span>
 
 		<br>
 	</div>
@@ -258,7 +258,7 @@
 		submit.addEventListener('click', async () => {
 			var path = select.options[select.selectedIndex].text;
 			path = path.substring(2, path.length - 2);
-			alert(path);
+
 			if(path != "Select a pa"){
 				var days = parseInt(day.value,10);
 				var period = [hour.value, minute.value, second.value];
@@ -274,10 +274,8 @@
 					}
 				}
 
-				alert("path->" + path + ", time->" + time);
-
-				response = await addBackUp(path, time);// Call Go function
-				if (response.Ok) {
+				response = await addBackUp(path, time);
+				if (response.Ok) {                          //     ARREGLAR  response.Ok esta mal
 					console.log("todo bien madafaka");
 					document.getElementById("infoText").innerText = "The file has been uploaded successfully";
 				} else {

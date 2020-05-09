@@ -26,9 +26,8 @@
 					<select id="downloads" name="downloads">
 					</select>
 				</div><br>
-				<span style="color: red;" id="infoText"></span><br><br>
-
-			  <input type="submit" id="submit" class="action-button shadow animate blue" value="Download">
+				  <input type="submit" id="submit" class="action-button shadow animate blue" value="Download"><br>
+				  <span style="color: red;" id="infoText"></span>
 			</form> 
 		<br>
 		</div>
@@ -36,14 +35,13 @@
 		<!-- Connect UI actions to Go functions -->
 		<script>
 			
-		const login = document.getElementById("submit");
+		const submit = document.getElementById("submit");
 		const select = document.getElementById("downloads");
 		var response;
-		
-	
+
 		callChargeFiles();
 
-		login.addEventListener('click', async () => {
+		submit.addEventListener('click', async () => {
 			var path = select.options[select.selectedIndex];
 
 			response = await RecoverBackUp(path.value);// Call Go function
@@ -62,6 +60,7 @@
 			
 			if (files == "") {
 				select.add(new Option(String.fromCodePoint(0x1F612)+"No Files"+String.fromCodePoint(0x1F612)));
+				submit.style ="display:none";
 			}else{
 				var fileIcon = String.fromCodePoint(0x1F5C1);
 				for(index in files){

@@ -145,10 +145,11 @@
 				<option value="{{.Directory}}" id="{{.Directory}}" >{{.Directory}}</option>
 				{{end}}
 			</select>
-			<br>
-			<span style="color: red;" id="infoText"></span><br>
+			<br><br>
 			
-			<input type="submit" id="submit" class="action-button shadow animate blue" value="Upload">
+			
+			<input type="submit" id="submit" class="action-button shadow animate blue" value="Upload"><br>
+			<span style="color: red;" id="infoText"></span>
 		</form>
 		<br>
 	</div>
@@ -170,13 +171,17 @@
 		submit.addEventListener('click', async () => {
 			var path = select.options[select.selectedIndex].text;
 			path = path.substring(2,path.length -2);
-			alert(path);
-			response = await SendBackUpToServer(path);// Call Go function
-			if (response.Ok) {
-				//chargeView('www/menu.html');
-				document.getElementById("infoText").innerText = "Backup correctly done."; 
-			} else {
-				document.getElementById("infoText").innerText = response.Msg; 
+			if(path != "Select a pa"){
+				response = await SendBackUpToServer(path);// Call Go function
+				if (response.Ok) {
+					//chargeView('www/menu.html');
+					document.getElementById("infoText").innerText = "Backup correctly done."; 
+				} else {
+					document.getElementById("infoText").innerText = response.Msg; 
+				}
+			}
+			else{
+				document.getElementById("infoText").innerText = "Please, select a path.";
 			}
 		});
 
