@@ -312,7 +312,7 @@ func shareHandler(w http.ResponseWriter, req *http.Request) {
 				for _, exfriend := range users {
 					exfriend.DeleteSharedFileWithMe(fileName, uStr)
 				}
-				response(w, true, fileName+" is't shared now")
+				response(w, true, fileName+" isn't shared now")
 			}
 
 		case http.MethodPost:

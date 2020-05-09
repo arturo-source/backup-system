@@ -106,7 +106,7 @@ func (u *user) StopSharing(fileName, newKey string) error {
 		}
 	}
 
-	return fmt.Errorf("File %s not found", fileName)
+	return fmt.Errorf("File isn't found among your files")
 }
 
 //AddSharedFileWithMe adds a friend file to SharedFilesWithMe
