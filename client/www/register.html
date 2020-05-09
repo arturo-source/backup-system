@@ -16,7 +16,7 @@
 			  <input type="text" id="user"><br>
 			  <label for="lname">Password</label><br>
 			  <input type="password" id="password"><br><br>
-			  <span style="color: red;" id="errorText"></span><br>
+			  <span style="color: red;" id="infoText"></span><br>
 			  <input type="submit" id="register" class="action-button shadow animate blue" value="Register">
 			</form> 
 			<br>
@@ -31,11 +31,15 @@
 			var response;
 
 			register.addEventListener('click', async () => {
-				response = await SignUp(user.value,password.value);// Call Go function
-				if(response.Ok) {
-					chargeView('www/menu.html');
+				if (password.value.match(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])[0-9a-zA-Z]{8,}$/) != null) {
+					response = await SignUp(user.value,password.value);// Call Go function
+					if(response.Ok) {
+						chargeView('www/menu.html');
+					} else {
+						document.getElementById("infoText").innerText = response.Msg; 
+					}
 				} else {
-					document.getElementById("errorText").innerText = response.Msg; 
+					document.getElementById("infoText").innerText = "The password has to contain 1 lower and 1 upper character, also 1 number at least. Moreover has to be longer than 7."; 
 				}
 			});
 		</script>

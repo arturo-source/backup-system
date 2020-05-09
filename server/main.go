@@ -173,7 +173,7 @@ func registerHandler(w http.ResponseWriter, req *http.Request) {
 			response(w, true, token)
 		}
 	} else {
-		response(w, false, "Not valid username, use alphanumeric characters only.")
+		response(w, false, "Not valid username, use alphanumeric characters only, and between 6 and 32 characters.")
 	}
 }
 
@@ -201,7 +201,7 @@ func loginHandler(w http.ResponseWriter, req *http.Request) {
 			response(w, false, "The user doesn't exist")
 		}
 	} else {
-		response(w, false, "Not valid username, use alphanumeric characters only.")
+		response(w, false, "Not valid username, use alphanumeric characters only, and between 6 and 32 characters.")
 	}
 }
 
