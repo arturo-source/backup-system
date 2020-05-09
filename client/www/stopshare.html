@@ -184,6 +184,7 @@
 			
 			if (files == "") {
 				select.add(new Option(String.fromCodePoint(0x1F612)+"No Files"+String.fromCodePoint(0x1F612)));
+				submit.style ="display:none";
 			}else{
 				var fileIcon = String.fromCodePoint(0x1F5C1);
 				for(index in files){
