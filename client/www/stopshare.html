@@ -142,10 +142,9 @@
 			<label>File</label>
 			<select id="select" name="selectdirectory">
 			</select>
-			<br>
-			<span style="color: red;" id="errorText"></span><br>
-		
-			<input type="submit" id="submit" class="action-button shadow animate blue" value="Stop sharing">
+			<br><br>
+			<input type="submit" id="submit" class="action-button shadow animate blue" value="Stop sharing"><br>
+			<span style="color: red;" id="infoText"></span>
 		</form>
 		<br>
 	</div>
@@ -169,9 +168,10 @@
 			if (response.Ok) {
 				//chargeView('www/menu.html');
 				console.log("todo bien madafaka");
+				document.getElementById("infoText").innerText = "Stopped sharing correctly"; 
 			} else {
 				console.log("mal subido coleguita");
-				document.getElementById("errorText").innerText = response.Msg; 
+				document.getElementById("infoText").innerText = response.Msg; 
 			}
 		});
 

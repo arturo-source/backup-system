@@ -195,7 +195,7 @@
 		<div>
 			<h2>Select the frequency of uploads</h2>
 		</div><br>
-		<label>Directory</label>
+		<label>Directory or File</label>
 		<select id="select" name="selectdirectory" onchange="callChargeDirectory()">
 			{{range .}}
 			<option value="{{.Directory}}" id="{{.Directory}}">{{.Directory}}</option>
@@ -206,25 +206,25 @@
 			<div>
 				<div>DAYS</div>
 				<button onclick="this.parentNode.querySelector('input[type=number]').stepUp()" class="plus"></button>
-				<input class="quantity" min="0" name="quantity" value="0" type="number" id="day">
+				<input class="quantity" min="0" name="quantity" value="0" type="number" id="day"readonly>
 				<button onclick="this.parentNode.querySelector('input[type=number]').stepDown()"></button>
 			</div><br>
 			<div>
 				<div class="labelnumbers">HRS</div>
 				<button onclick="this.parentNode.querySelector('input[type=number]').stepUp()" class="plus"></button>
-				<input class="quantity" min="0" name="quantity" value="0" type="number" id="hour">
+				<input class="quantity" min="0" name="quantity" value="0" type="number" id="hour"readonly>
 				<button onclick="this.parentNode.querySelector('input[type=number]').stepDown()"></button>
 			</div><br>
 			<div>
 				<div>MINS</div>
 				<button onclick="this.parentNode.querySelector('input[type=number]').stepUp()" class="plus"></button>
-				<input class="quantity" min="0" name="quantity" value="0" type="number" id="minute">
+				<input class="quantity" min="0" name="quantity" value="0" type="number" id="minute"readonly>
 				<button onclick="this.parentNode.querySelector('input[type=number]').stepDown()"></button>
 			</div><br>
 			<div>
 				<div>SECS</div>
 				<button onclick="this.parentNode.querySelector('input[type=number]').stepUp()" class="plus"></button>
-				<input class="quantity" min="0" name="quantity" value="0" type="number" id="second">
+				<input class="quantity" min="0" name="quantity" value="0" type="number" id="second"readonly>
 				<button onclick="this.parentNode.querySelector('input[type=number]').stepDown()"></button>
 			</div><br>
 		</div>
@@ -277,7 +277,7 @@
 				response = await addBackUp(path, time);
 				if (response.Ok) {                          //     ARREGLAR  response.Ok esta mal
 					console.log("todo bien madafaka");
-					document.getElementById("infoText").innerText = "The file has been uploaded successfully";
+					document.getElementById("infoText").innerText = "Backup correctly done."; 
 				} else {
 					console.log("mal subido coleguita");
 					document.getElementById("infoText").innerText = response.Msg;
