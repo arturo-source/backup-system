@@ -197,9 +197,17 @@
 			}else{
 				var fileIcon = String.fromCodePoint(0x1F5C1);
 				for(index in files){
-					var regexFile = new RegExp('[0-9]{1,4}-[0-9]{1,2}-[0-9]{1,2} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}');
-					var textFile = (regexFile.exec(files[index]));
-					select.add(new Option(fileIcon + textFile, files[index]));
+					var datos = files[index].split(";");
+					var tipo;
+					var regexDate = new RegExp('[0-9]{1,4}-[0-9]{1,2}-[0-9]{1,2} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}');
+					var date = (regexDate.exec(datos[2])).toString();
+					if(datos[0]=="manual"){
+						tipo = String.fromCodePoint(0x264F);
+					}else{
+						tipo = String.fromCodePoint(0x03C1);
+					}
+
+					select.add(new Option(tipo+" "+ datos[1]+" "+ date,files[index]));
 				}
 			}
 		}
