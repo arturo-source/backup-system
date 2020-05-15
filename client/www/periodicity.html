@@ -206,25 +206,25 @@
 			<div>
 				<div>DAYS</div>
 				<button onclick="this.parentNode.querySelector('input[type=number]').stepUp()" class="plus"></button>
-				<input class="quantity" min="0" name="quantity" value="0" type="number" id="day"readonly>
+				<input class="quantity" min="0" name="quantity" value="0" type="number" id="day" readonly>
 				<button onclick="this.parentNode.querySelector('input[type=number]').stepDown()"></button>
 			</div><br>
 			<div>
 				<div class="labelnumbers">HRS</div>
 				<button onclick="this.parentNode.querySelector('input[type=number]').stepUp()" class="plus"></button>
-				<input class="quantity" min="0" name="quantity" value="0" type="number" id="hour"readonly>
+				<input class="quantity" min="0" name="quantity" value="0" type="number" id="hour" readonly>
 				<button onclick="this.parentNode.querySelector('input[type=number]').stepDown()"></button>
 			</div><br>
 			<div>
 				<div>MINS</div>
 				<button onclick="this.parentNode.querySelector('input[type=number]').stepUp()" class="plus"></button>
-				<input class="quantity" min="0" name="quantity" value="0" type="number" id="minute"readonly>
+				<input class="quantity" min="0" name="quantity" value="0" type="number" id="minute" readonly>
 				<button onclick="this.parentNode.querySelector('input[type=number]').stepDown()"></button>
 			</div><br>
 			<div>
 				<div>SECS</div>
 				<button onclick="this.parentNode.querySelector('input[type=number]').stepUp()" class="plus"></button>
-				<input class="quantity" min="0" name="quantity" value="0" type="number" id="second"readonly>
+				<input class="quantity" min="0" name="quantity" value="0" type="number" id="second" readonly>
 				<button onclick="this.parentNode.querySelector('input[type=number]').stepDown()"></button>
 			</div><br>
 		</div>
@@ -259,13 +259,13 @@
 			var path = select.options[select.selectedIndex].text;
 			path = path.substring(2, path.length - 2);
 
-			if(path != "Select a pa"){
-				var days = parseInt(day.value,10);
+			if (path != "Select a pa") {
+				var days = parseInt(day.value, 10);
 				var period = [hour.value, minute.value, second.value];
 				var labels = ['h', 'm', 's'];
-				var time='';
+				var time = '';
 				if (days != '0') {
-						period[0] = (parseInt(period[0],10)+ (days*24)).toString();
+					period[0] = (parseInt(period[0], 10) + (days * 24)).toString();
 				}
 
 				for (var i = 0; i < period.length; i++) {
@@ -273,20 +273,20 @@
 						time = time + period[i].toString() + labels[i];
 					}
 				}
-				try{
-					response = await addBackUp(path, time);
+				try {
+					response = await AddPeriodicity(path, time);
 					if (response.Ok) {                          //     ARREGLAR  response.Ok esta mal
 						console.log("todo bien madafaka");
-						document.getElementById("infoText").innerText = "Backup correctly done."; 
+						document.getElementById("infoText").innerText = "Backup correctly done.";
 					} else {
 						console.log("mal subido coleguita");
 						document.getElementById("infoText").innerText = response.Msg;
 					}
-				}catch(error){
-					document.getElementById("infoText").innerText = error; 
+				} catch (error) {
+					document.getElementById("infoText").innerText = error;
 				}
 			}
-			else{
+			else {
 				document.getElementById("infoText").innerText = "Please, select a path.";
 			}
 

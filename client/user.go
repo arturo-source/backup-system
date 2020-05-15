@@ -70,7 +70,7 @@ func (u *user) sign(username, password, command string) (resp, error) {
 		err = u.readPeriodicity()
 		u.loopPeriodicity()
 	}
-	return response, err
+	return response, nil
 }
 
 //SignIn initializes the variables of user and tries to log in
@@ -636,6 +636,18 @@ func (u *user) deletePeriodicity(id int) error {
 func (u *user) DeletePeriodicity(id int) {
 	close(u.periodicals[id].stopchan)
 }
-func (u *user) GetPeriodicity() []Periodical {
-	return u.periodicals
+
+type PeriodicalParse struct {
+	Path          string
+	TimeToUpdload string
+	ID            int
+}
+
+func (u *user) GetPeriodicity() []PeriodicalParse {
+	periodicalsParse := make([]PeriodicalParse, 0)
+
+	for i, period := range u.periodicals {
+		periodicalsParse = append(periodicalsParse, PeriodicalParse{period.Path, period.TimeToUpdload.String(), i})
+	}
+	return periodicalsParse
 }

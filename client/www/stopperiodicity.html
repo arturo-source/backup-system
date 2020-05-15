@@ -163,15 +163,12 @@
 		callChargeFiles();
 		
 			submit.addEventListener('click', async () => {
-			var path = select.options[select.selectedIndex].value;
+			var id = select.options[select.selectedIndex].value;
+			alert(id);
 			try{
-				response = await ShareFileWith(path,friend.value);// Call Go function
+				await DeletePeriodicity(id);// Call Go function
+  				document.getElementById("infoText").innerText = "Shared with " + friend.value + " correctly."; 
 
-				if (response.Ok) {
-					document.getElementById("infoText").innerText = "Shared with " + friend.value + " correctly."; 
-				} else {
-					document.getElementById("infoText").innerText = response.Msg; 
-				}
 			}catch(error){
 				document.getElementById("infoText").innerText = error; 
 			}
@@ -180,35 +177,22 @@
 
 
 
-
-
 		async function callChargeFiles(){
 
 			response = await GetPeriodicity();
 
-			if (response.length != 0){
-				var files = response.Msg.split(',');
-			
-				if (files == "") {
-					select.add(new Option(String.fromCodePoint(0x1F612)+"No Files"+String.fromCodePoint(0x1F612)));
-					submit.style ="display:none";
-					friend.style ="display:none";
-					labelfriend.style ="display:none";
-				}else{
-					var fileIcon = String.fromCodePoint(0x1F5C1);
-					for(index in files){
-						var datos = files[index].split(";");
-						if(datos[0]=="periodical"){
-							var tipo;
-							tipo = String.fromCodePoint(0x03C1);
-							
-							var regexDate = new RegExp('[0-9]{1,4}-[0-9]{1,2}-[0-9]{1,2} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}');
-							var date = (regexDate.exec(datos[2])).toString();
+			if (response.length == 0){
+				select.add(new Option(String.fromCodePoint(0x1F612)+"No Files"+String.fromCodePoint(0x1F612)));
+				submit.style ="display:none";
+			}else{
+				var fileIcon = String.fromCodePoint(0x1F5C1);
+				for(index in response){
+					
+					var regexFile = new RegExp('\/(?:[vV][1-9]\d?(?:-\d)?\/)?[^\/]+$');
+					var file = (regexFile.exec(response[index].Path)).toString();
 
-							select.add(new Option(tipo+" "+ datos[1]+" "+ date,files[index]));
-						}
+					select.add(new Option(fileIcon+" "+ file+" "+ response[index].TimeToUpdload,response[index].ID));
 
-					}
 				}
 			}
 
