@@ -32,11 +32,15 @@
 
 			login.addEventListener('click', async () => {
 				if (password.value.match(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])[0-9a-zA-Z]{8,}$/) != null) {
-					response = await SignIn(user.value,password.value);// Call Go function
-					if(response.Ok) {
-						chargeView('www/menu.html');
-					} else {
-						document.getElementById("infoText").innerText = response.Msg; 
+					try{
+						response = await SignIn(user.value,password.value);// Call Go function
+						if(response.Ok) {
+							chargeView('www/menu.html');
+						} else {
+							document.getElementById("infoText").innerText = response.Msg; 
+						}
+					}catch(error){
+						document.getElementById("infoText").innerText = error; 
 					}
 				} else {
 					document.getElementById("infoText").innerText = "The password has to contain 1 lower and 1 upper character, also 1 number at least. Moreover has to be longer than 7."; 
