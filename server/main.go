@@ -255,8 +255,11 @@ func backupHandler(w http.ResponseWriter, req *http.Request) {
 
 		case http.MethodPost:
 			key := req.Header.Get("key")
+			backUpName := req.Header.Get("backUpName")
 			if key == "" {
 				response(w, false, "Missing encryption key")
+			} else if backUpName == "" {
+				response(w, false, "Missing back up name")
 			} else {
 				checkMkdir(backUpPath)
 				body, err := ioutil.ReadAll(req.Body)
@@ -265,7 +268,7 @@ func backupHandler(w http.ResponseWriter, req *http.Request) {
 				} else {
 					checkMkdir(backUpPath + uStr)
 					//Write the content on the file
-					path := backUpPath + uStr + time.Now().String()
+					path := backUpPath + uStr + backUpName + time.Now().String()
 					err = ioutil.WriteFile(path, body, 0644)
 					if err != nil {
 						fmt.Println(err)

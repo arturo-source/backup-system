@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 )
 
 // Response type recieve from the server
@@ -245,12 +246,23 @@ func (u *user) AuthorizeOnServer(command string) (resp, error) {
 
 //SendBackUpToServer sends a folder or file to the server
 //but its previously compressed and encrypted
-func (u *user) SendBackUpToServer(path string) (resp, error) {
+func (u *user) SendBackUpToServer(path string, isPeriodical bool) (resp, error) {
+	//Generate name to the back up
+	r, err := regexp.Compile("\\/(?:[vV][1-9]\\d?(?:-\\d)?\\/)?[^\\/]+$")
+	if err != nil {
+		panic(err)
+	}
+	backUpName := r.FindString(path)
+	if isPeriodical {
+		backUpName = fmt.Sprintf("%s;%s;", "periodical", backUpName)
+	} else {
+		backUpName = fmt.Sprintf("%s;%s;", "manual", backUpName)
+	}
 	//Generate encryption key
 	key := RandStringBytes(16)
 	response := resp{}
 	//Creates a temporary file to compress, encrypt and send to the server
-	err := compressFile(path, "compressed.zip")
+	err = compressFile(path, "compressed.zip")
 	if err != nil {
 		return response, err
 	}
@@ -267,6 +279,7 @@ func (u *user) SendBackUpToServer(path string) (resp, error) {
 	req, err := http.NewRequest("POST", "https://localhost:9043/backup", bytes.NewBuffer(content))
 	//To authorize the user
 	req.Header.Add("token", u.token)
+	req.Header.Add("backUpName", backUpName)
 	key, err = rsa.EncryptOAEP(sha256.New(), rand.Reader, u.pubKey, key, nil)
 	if err != nil {
 		return response, err
