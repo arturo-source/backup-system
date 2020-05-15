@@ -18,23 +18,6 @@ type MyUI struct {
 	u  user
 }
 
-func (myui *MyUI) addBackUp(path, time string) resp {
-	b := backUp{}
-	err := b.fixTime(time)
-	if err != nil {
-		return resp{
-			Ok:  false,
-			Msg: err.Error(),
-		}
-	}
-	b.start(myui.u, path)
-
-	return resp{
-		Ok:  true,
-		Msg: "Back up correctly done.",
-	}
-}
-
 func (myui *MyUI) chargeView(filePath string) {
 	data, err := ioutil.ReadFile(filePath)
 	if err != nil {

@@ -528,6 +528,7 @@ type Periodical struct {
 	stopchan      chan struct{}
 }
 
+//readPeriodicity is used to read the user periodicity config
 func (u *user) readPeriodicity() error {
 	u.periodicals = make([]Periodical, 0)
 	content, err := ioutil.ReadFile(u.username + ".p")
@@ -548,6 +549,7 @@ func (u *user) readPeriodicity() error {
 	return nil
 }
 
+//loopPeriodicity is used to throw 1 go routine per periodicity
 func (u *user) loopPeriodicity() {
 	for i, p := range u.periodicals {
 		if isOutdated(p.NextUpload) {
@@ -562,6 +564,7 @@ func isOutdated(date time.Time) bool {
 	return time.Now().After(date)
 }
 
+//addPeriodicity is used to add one more go routine
 func (u *user) addPeriodicity(p Periodical, id int) {
 	doBackUp := time.After(p.NextUpload.Sub(time.Now()))
 	for {
@@ -579,6 +582,7 @@ func (u *user) addPeriodicity(p Periodical, id int) {
 	}
 }
 
+//AddPeriodicity is public because is used to comunicate from JavaScript, add a new periodicity and writes it in the config file
 func (u *user) AddPeriodicity(path, nextBackUp string) error {
 	nextBackUpDuration, err := time.ParseDuration(nextBackUp)
 	if err != nil {
@@ -607,10 +611,28 @@ func (u *user) AddPeriodicity(path, nextBackUp string) error {
 
 	return nil
 }
-func (u *user) deletePeriodicity(id int) {
+
+//deletePeriodicity deletes the periodicity with that id from the array and ovewrite the file
+func (u *user) deletePeriodicity(id int) error {
 	u.periodicals[id] = u.periodicals[len(u.periodicals)-1]
 	u.periodicals = u.periodicals[:len(u.periodicals)-1]
+	content, err := json.Marshal(u.periodicals)
+	if err != nil {
+		return err
+	}
+	encryptedContent, err := u.encrypt(content, nil)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(u.username+".p", encryptedContent, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
+
+//DeletePeriodicity is public because is used to comunicate from JavaScript, when the user wants to close the thread is doing the backups
 func (u *user) DeletePeriodicity(id int) {
 	close(u.periodicals[id].stopchan)
 }
