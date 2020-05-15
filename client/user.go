@@ -67,13 +67,10 @@ func (u *user) sign(username, password, command string) (resp, error) {
 	}
 	if response.Ok {
 		u.token = response.Msg
-		u.readPeriodicity() //Leemos y cargamos la info de periodicidad en periodicals
-		//u.loopPeriodicity()  //Ejecutamos 1 hilo por cada periodicidad leida de periodicals
-		// u.addPeriodicity() añadir periodicidad al fichero usuario.p y "crear hilo nuevo"(no hacer)
-		// u.deletePeriodicity() borrar periodicidad al fichero usuario.p y "buscar y matar hilo"(no hacer)
-		//true / loquesea / timestamp
+		err = u.readPeriodicity()
+		u.loopPeriodicity()
 	}
-	return response, nil
+	return response, err
 }
 
 //SignIn initializes the variables of user and tries to log in
@@ -583,10 +580,10 @@ func (u *user) addPeriodicity(p Periodical, id int) {
 }
 
 //AddPeriodicity is public because is used to comunicate from JavaScript, add a new periodicity and writes it in the config file
-func (u *user) AddPeriodicity(path, nextBackUp string) error {
+func (u *user) AddPeriodicity(path, nextBackUp string) (resp, error) {
 	nextBackUpDuration, err := time.ParseDuration(nextBackUp)
 	if err != nil {
-		return err
+		return resp{Ok: false, Msg: err.Error()}, err
 	}
 	nextUpload := time.Now().Add(nextBackUpDuration)
 	u.periodicals = append(u.periodicals, Periodical{
@@ -598,18 +595,18 @@ func (u *user) AddPeriodicity(path, nextBackUp string) error {
 
 	content, err := json.Marshal(u.periodicals)
 	if err != nil {
-		return err
+		return resp{Ok: false, Msg: err.Error()}, err
 	}
 	encryptedContent, err := u.encrypt(content, nil)
 	if err != nil {
-		return err
+		return resp{Ok: false, Msg: err.Error()}, err
 	}
 	err = ioutil.WriteFile(u.username+".p", encryptedContent, 0644)
 	if err != nil {
-		return err
+		return resp{Ok: false, Msg: err.Error()}, err
 	}
 
-	return nil
+	return resp{Ok: true, Msg: "Periodicity correctly added"}, nil
 }
 
 //deletePeriodicity deletes the periodicity with that id from the array and ovewrite the file
