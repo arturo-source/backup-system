@@ -37,7 +37,9 @@ func main() {
 	ui.Bind("ShareFileWith", myui.u.ShareFileWith)
 	ui.Bind("GetSharedFiles", myui.u.GetSharedFiles)
 	ui.Bind("StopSharingFile", myui.u.StopSharingFile)
-	ui.Bind("addBackUp", myui.addBackUp)
+	ui.Bind("AddPeriodicity", myui.u.AddPeriodicity)
+	ui.Bind("DeletePeriodicity", myui.u.DeletePeriodicity)
+	ui.Bind("GetPeriodicity", myui.u.GetPeriodicity)
 
 	// Wait until the interrupt signal arrives or browser window is closed
 	sigc := make(chan os.Signal)
