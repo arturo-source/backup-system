@@ -1,0 +1,219 @@
+<!doctype html>
+<html>
+
+<head>
+	<title>Counter</title>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+			font-family: 'Baloo Thambi 2', cursive;
+			background-color: #66afec;
+		}
+
+		.form {
+			position: relative;
+			right: -10px;
+			bottom: -10px;
+			width: 400px;
+			height: 400px;
+			text-align: center;
+			border-radius: 10px;
+		}
+		.directory{
+			width: 400px;
+			height: 400px;
+		}
+		label {
+			color: azure;
+		}
+
+		h1,
+		h2 {
+			color: azure;
+		}
+
+		input {
+			border-radius: 15px;
+			padding: 0.5%;
+			text-align: center;
+		}
+
+		.iconmenu {
+			position: relative;
+			right: -180px;
+			top: -40px;
+			text-align: right;
+			font-size: 30px;
+		}
+
+		.titlemenu {
+			text-align: left;
+			color: azure;
+		}
+
+		a {
+			text-decoration: none;
+			color: azure;
+		}
+
+		.animate {
+			transition: all 0.1s;
+			-webkit-transition: all 0.1s;
+		}
+
+		.action-button {
+			position: relative;
+			padding: 10px 40px;
+			margin: 0px 10px 10px 0px;
+			border-radius: 10px;
+			font-family: 'Lato', sans-serif;
+			font-size: 18px;
+			color: #FFF;
+			text-decoration: none;
+		}
+
+		.action-button:active {
+			transform: translate(0px, 5px);
+			-webkit-transform: translate(0px, 5px);
+			border-bottom: 1px solid;
+		}
+
+		.blue {
+			background-color: #3498db;
+			border-bottom: 5px solid #2980B9;
+			text-shadow: 0px -2px #2980B9;
+		}
+
+		.upload-btn-wrapper {
+			position: relative;
+			overflow: hidden;
+			display: inline-block;
+		}
+
+		.btn {
+			border: 2px solid gray;
+			color: gray;
+			background-color: white;
+			padding: 8px 20px;
+			border-radius: 8px;
+			font-size: 20px;
+			font-weight: bold;
+		}
+
+		.upload-btn-wrapper input[type=file] {
+			font-size: 100px;
+			position: absolute;
+			left: 0;
+			top: 0;
+			opacity: 0;
+		}
+		select {
+			text-align: center;
+			text-align-last: center;
+			width: 200px;
+
+		}
+		option {
+			text-align: left;
+			
+		}
+	</style>
+	<link href="https://fonts.googleapis.com/css?family=Baloo+Thambi+2&display=swap" rel="stylesheet">
+
+</head>
+
+<body>
+	<!-- UI layout -->
+
+	<div class="form">
+
+		<form>
+			<div>
+				<h2 class="titlemenu">STOP PERIODICITY</h2>
+				<a onclick="chargeView('www/menu.html')" class="iconmenu">&#128281;</a>
+				<a onclick="chargeView('www/index.html')" class="iconmenu">&#128282;</a>
+			</div>
+			<div>
+				<h1>Select the file you want to stop its periodicity</h1>
+			</div><br>
+
+			<label>File: </label>
+			<select id="select" name="selectdirectory">
+			</select>
+			<br><br>
+			<input type="submit" id="submit" class="action-button shadow animate blue" value="Stop"><br>
+			<span style="color: red;" id="infoText"></span>
+		</form>
+		<br>
+	</div>
+
+	<!-- Connect UI actions to Go functions -->
+	<script>
+
+		const submit = document.getElementById("submit");
+		const file = document.getElementById("file");
+		const friend = document.getElementById("friend");
+		const labelfriend = document.getElementById("labelfriend");
+		const select = document.getElementById("select");
+
+		var response;
+
+		callChargeFiles();
+		
+			submit.addEventListener('click', async () => {
+			var path = select.options[select.selectedIndex].value;
+			try{
+				response = await ShareFileWith(path,friend.value);// Call Go function
+
+				if (response.Ok) {
+					document.getElementById("infoText").innerText = "Shared with " + friend.value + " correctly."; 
+				} else {
+					document.getElementById("infoText").innerText = response.Msg; 
+				}
+			}catch(error){
+				document.getElementById("infoText").innerText = error; 
+			}
+
+		});
+
+
+
+
+
+		async function callChargeFiles(){
+
+			response = await GetPeriodicity();
+
+			if (response.length != 0){
+				var files = response.Msg.split(',');
+			
+				if (files == "") {
+					select.add(new Option(String.fromCodePoint(0x1F612)+"No Files"+String.fromCodePoint(0x1F612)));
+					submit.style ="display:none";
+					friend.style ="display:none";
+					labelfriend.style ="display:none";
+				}else{
+					var fileIcon = String.fromCodePoint(0x1F5C1);
+					for(index in files){
+						var datos = files[index].split(";");
+						if(datos[0]=="periodical"){
+							var tipo;
+							tipo = String.fromCodePoint(0x03C1);
+							
+							var regexDate = new RegExp('[0-9]{1,4}-[0-9]{1,2}-[0-9]{1,2} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}');
+							var date = (regexDate.exec(datos[2])).toString();
+
+							select.add(new Option(tipo+" "+ datos[1]+" "+ date,files[index]));
+						}
+
+					}
+				}
+			}
+
+		}
+	</script>
+</body>
+
+</html>

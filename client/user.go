@@ -633,3 +633,6 @@ func (u *user) deletePeriodicity(id int) error {
 func (u *user) DeletePeriodicity(id int) {
 	close(u.periodicals[id].stopchan)
 }
+func (u *user) GetPeriodicity() []Periodical {
+	return u.periodicals
+}
