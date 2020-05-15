@@ -578,6 +578,7 @@ func (u *user) addPeriodicity(p Periodical, id int) {
 		}
 	}
 }
+
 func (u *user) AddPeriodicity(path, nextBackUp string) error {
 	nextBackUpDuration, err := time.ParseDuration(nextBackUp)
 	if err != nil {
@@ -612,4 +613,7 @@ func (u *user) deletePeriodicity(id int) {
 }
 func (u *user) DeletePeriodicity(id int) {
 	close(u.periodicals[id].stopchan)
+}
+func (u *user) GetPeriodicity() []Periodical {
+	return u.periodicals
 }
