@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"time"
 )
 
 // Response type recieve from the server
@@ -522,14 +523,13 @@ func (u *user) GetSharedFiles() (resp, error) {
 
 type Periodical struct {
 	Path          string
-	TimeToUpdload string
-	NextUpload    Date
+	TimeToUpdload time.Duration
+	NextUpload    time.Time
+	stopchan      chan struct{}
 }
 
 func (u *user) readPeriodicity() error {
-
 	u.periodicals = make([]Periodical, 0)
-
 	content, err := ioutil.ReadFile(u.username + ".p")
 	if err != nil {
 		return err
@@ -548,13 +548,68 @@ func (u *user) readPeriodicity() error {
 	return nil
 }
 
-/*
-func (u *user) loopPeriodicity() (resp, error) {
-
+func (u *user) loopPeriodicity() {
+	for i, p := range u.periodicals {
+		if isOutdated(p.NextUpload) {
+			u.periodicals[i].NextUpload = time.Now().Add(p.TimeToUpdload)
+		}
+		go u.addPeriodicity(p, i)
+	}
 }
-func (u *user) addPeriodicity() (resp, error) {
 
+//isOutdated returns true if the date has expired
+func isOutdated(date time.Time) bool {
+	return time.Now().After(date)
 }
-func (u *user) deletePeriodicity() (resp, error) {
 
-}*/
+func (u *user) addPeriodicity(p Periodical, id int) {
+	doBackUp := time.After(p.NextUpload.Sub(time.Now()))
+	for {
+		select {
+		case <-p.stopchan:
+			u.deletePeriodicity(id)
+			break
+		case <-doBackUp:
+			_, err := u.SendBackUpToServer(p.Path, true)
+			if err != nil {
+				fmt.Println(err)
+			}
+			doBackUp = time.After(p.TimeToUpdload)
+		}
+	}
+}
+func (u *user) AddPeriodicity(path, nextBackUp string) error {
+	nextBackUpDuration, err := time.ParseDuration(nextBackUp)
+	if err != nil {
+		return err
+	}
+	nextUpload := time.Now().Add(nextBackUpDuration)
+	u.periodicals = append(u.periodicals, Periodical{
+		Path:          path,
+		TimeToUpdload: nextBackUpDuration,
+		NextUpload:    nextUpload,
+		stopchan:      make(chan struct{}),
+	})
+
+	content, err := json.Marshal(u.periodicals)
+	if err != nil {
+		return err
+	}
+	encryptedContent, err := u.encrypt(content, nil)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(u.username+".p", encryptedContent, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+func (u *user) deletePeriodicity(id int) {
+	u.periodicals[id] = u.periodicals[len(u.periodicals)-1]
+	u.periodicals = u.periodicals[:len(u.periodicals)-1]
+}
+func (u *user) DeletePeriodicity(id int) {
+	close(u.periodicals[id].stopchan)
+}
