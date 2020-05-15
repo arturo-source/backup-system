@@ -518,6 +518,7 @@ func (u *user) GetSharedFiles() (resp, error) {
 	return response, nil
 }
 
+//Periodical is to manage the periodical back ups
 type Periodical struct {
 	Path          string
 	TimeToUpdload time.Duration
@@ -586,12 +587,14 @@ func (u *user) AddPeriodicity(path, nextBackUp string) (resp, error) {
 		return resp{Ok: false, Msg: err.Error()}, err
 	}
 	nextUpload := time.Now().Add(nextBackUpDuration)
-	u.periodicals = append(u.periodicals, Periodical{
+	p := Periodical{
 		Path:          path,
 		TimeToUpdload: nextBackUpDuration,
 		NextUpload:    nextUpload,
 		stopchan:      make(chan struct{}),
-	})
+	}
+	u.periodicals = append(u.periodicals, p)
+	go u.addPeriodicity(p, len(u.periodicals)-1)
 
 	content, err := json.Marshal(u.periodicals)
 	if err != nil {
