@@ -44,7 +44,7 @@ func (b *backUp) start(u user, path string) {
 				fmt.Println(err)
 				return
 			}
-			_, err = u.SendBackUpToServer(path)
+			_, err = u.SendBackUpToServer(path, true)
 			if err != nil {
 				fmt.Println(err)
 			}
