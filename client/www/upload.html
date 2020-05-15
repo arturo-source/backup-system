@@ -173,7 +173,7 @@
 			path = path.substring(2,path.length -2);
 			if(path != "Select a pa"){
 				try{
-					response = await SendBackUpToServer(path);// Call Go function
+					response = await SendBackUpToServer(path,false);// Call Go function
 					if (response.Ok) {
 						//chargeView('www/menu.html');
 						document.getElementById("infoText").innerText = "Backup correctly done."; 
