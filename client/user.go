@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"strconv"
 	"time"
 )
 
@@ -520,6 +521,7 @@ func (u *user) GetSharedFiles() (resp, error) {
 
 //Periodical is to manage the periodical back ups
 type Periodical struct {
+	ID            int
 	Path          string
 	TimeToUpdload time.Duration
 	NextUpload    time.Time
@@ -543,6 +545,9 @@ func (u *user) readPeriodicity() error {
 	if err != nil {
 		return err
 	}
+	for i := range u.periodicals {
+		u.periodicals[i].stopchan = make(chan struct{})
+	}
 
 	return nil
 }
@@ -553,7 +558,7 @@ func (u *user) loopPeriodicity() {
 		if isOutdated(p.NextUpload) {
 			u.periodicals[i].NextUpload = time.Now().Add(p.TimeToUpdload)
 		}
-		go u.addPeriodicity(p, i)
+		go u.addPeriodicity(p)
 	}
 }
 
@@ -563,12 +568,13 @@ func isOutdated(date time.Time) bool {
 }
 
 //addPeriodicity is used to add one more go routine
-func (u *user) addPeriodicity(p Periodical, id int) {
+func (u *user) addPeriodicity(p Periodical) {
 	doBackUp := time.After(p.NextUpload.Sub(time.Now()))
 	for {
 		select {
 		case <-p.stopchan:
-			u.deletePeriodicity(id)
+			err := u.deletePeriodicity(p.ID)
+			fmt.Println(err)
 			break
 		case <-doBackUp:
 			_, err := u.SendBackUpToServer(p.Path, true)
@@ -587,14 +593,19 @@ func (u *user) AddPeriodicity(path, nextBackUp string) (resp, error) {
 		return resp{Ok: false, Msg: err.Error()}, err
 	}
 	nextUpload := time.Now().Add(nextBackUpDuration)
+	id := 0
+	if len(u.periodicals) > 0 {
+		id = u.periodicals[len(u.periodicals)-1].ID + 1
+	}
 	p := Periodical{
+		ID:            id,
 		Path:          path,
 		TimeToUpdload: nextBackUpDuration,
 		NextUpload:    nextUpload,
 		stopchan:      make(chan struct{}),
 	}
 	u.periodicals = append(u.periodicals, p)
-	go u.addPeriodicity(p, len(u.periodicals)-1)
+	go u.addPeriodicity(p)
 
 	content, err := json.Marshal(u.periodicals)
 	if err != nil {
@@ -614,27 +625,38 @@ func (u *user) AddPeriodicity(path, nextBackUp string) (resp, error) {
 
 //deletePeriodicity deletes the periodicity with that id from the array and ovewrite the file
 func (u *user) deletePeriodicity(id int) error {
-	u.periodicals[id] = u.periodicals[len(u.periodicals)-1]
-	u.periodicals = u.periodicals[:len(u.periodicals)-1]
-	content, err := json.Marshal(u.periodicals)
-	if err != nil {
-		return err
-	}
-	encryptedContent, err := u.encrypt(content, nil)
-	if err != nil {
-		return err
-	}
-	err = ioutil.WriteFile(u.username+".p", encryptedContent, 0644)
-	if err != nil {
-		return err
+	for i, p := range u.periodicals {
+		if p.ID == id {
+			u.periodicals = append(u.periodicals[:i-1], u.periodicals[i:]...)
+			// u.periodicals[id] = u.periodicals[len(u.periodicals)-1]
+			// u.periodicals = u.periodicals[:len(u.periodicals)-1]
+			content, err := json.Marshal(u.periodicals)
+			if err != nil {
+				return err
+			}
+			encryptedContent, err := u.encrypt(content, nil)
+			if err != nil {
+				return err
+			}
+			err = ioutil.WriteFile(u.username+".p", encryptedContent, 0644)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
 	}
 
-	return nil
+	return fmt.Errorf("This ID doesn't correspond to any periodicity")
 }
 
 //DeletePeriodicity is public because is used to comunicate from JavaScript, when the user wants to close the thread is doing the backups
-func (u *user) DeletePeriodicity(id int) {
-	close(u.periodicals[id].stopchan)
+func (u *user) DeletePeriodicity(id string) (resp, error) {
+	i, err := strconv.Atoi(id)
+	if err != nil {
+		return resp{Ok: false, Msg: err.Error()}, err
+	}
+	close(u.periodicals[i].stopchan)
+	return resp{Ok: true, Msg: "Periodicity stoped"}, nil
 }
 
 type PeriodicalParse struct {
@@ -646,8 +668,8 @@ type PeriodicalParse struct {
 func (u *user) GetPeriodicity() []PeriodicalParse {
 	periodicalsParse := make([]PeriodicalParse, 0)
 
-	for i, period := range u.periodicals {
-		periodicalsParse = append(periodicalsParse, PeriodicalParse{period.Path, period.TimeToUpdload.String(), i})
+	for _, period := range u.periodicals {
+		periodicalsParse = append(periodicalsParse, PeriodicalParse{period.Path, period.TimeToUpdload.String(), period.ID})
 	}
 	return periodicalsParse
 }
