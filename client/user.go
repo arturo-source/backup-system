@@ -207,7 +207,11 @@ func (u *user) AuthorizeOnServer(command string) (resp, error) {
 		if err != nil {
 			panic(err)
 		}
-		data.Set("privkey", encode64(compressData(privKeyJSON)))
+		privKeyEncrypted, err := u.encrypt(privKeyJSON, nil)
+		if err != nil {
+			panic(err)
+		}
+		data.Set("privkey", encode64(compressData(privKeyEncrypted)))
 	}
 
 	r, err := u.httpclient.PostForm("https://localhost:9043/"+command, data)
@@ -240,7 +244,14 @@ func (u *user) AuthorizeOnServer(command string) (resp, error) {
 			panic(err)
 		}
 		privKeyJSON := res.Header.Get("privkey")
-		err = json.Unmarshal(uncompressData(decode64(privKeyJSON)), u.privKey)
+		privKeyEncrypted := uncompressData(decode64(privKeyJSON))
+		privKeyDecrypted, err := u.decrypt(privKeyEncrypted, nil)
+		if err != nil {
+			panic(err)
+		}
+
+		err = json.Unmarshal(privKeyDecrypted, u.privKey)
+
 		if err != nil {
 			panic(err)
 		}
@@ -659,7 +670,7 @@ func (u *user) DeletePeriodicity(id string) (resp, error) {
 		return resp{Ok: false, Msg: err.Error()}, err
 	}
 	close(u.periodicals[i].stopchan)
-	return resp{Ok: true, Msg: "Periodicity stoped"}, nil
+	return resp{Ok: true, Msg: "Periodicity stopped"}, nil
 }
 
 type PeriodicalParse struct {
