@@ -574,14 +574,17 @@ func (u *user) addPeriodicity(p Periodical) {
 		select {
 		case <-p.stopchan:
 			err := u.deletePeriodicity(p.ID)
-			fmt.Println(err)
-			break
+			if err != nil {
+				fmt.Println(err)
+			}
+			return
 		case <-doBackUp:
 			_, err := u.SendBackUpToServer(p.Path, true)
 			if err != nil {
 				fmt.Println(err)
 			}
 			doBackUp = time.After(p.TimeToUpdload)
+			break
 		}
 	}
 }
@@ -627,7 +630,7 @@ func (u *user) AddPeriodicity(path, nextBackUp string) (resp, error) {
 func (u *user) deletePeriodicity(id int) error {
 	for i, p := range u.periodicals {
 		if p.ID == id {
-			u.periodicals = append(u.periodicals[:i-1], u.periodicals[i:]...)
+			u.periodicals = append(u.periodicals[:i], u.periodicals[i+1:]...)
 			// u.periodicals[id] = u.periodicals[len(u.periodicals)-1]
 			// u.periodicals = u.periodicals[:len(u.periodicals)-1]
 			content, err := json.Marshal(u.periodicals)
