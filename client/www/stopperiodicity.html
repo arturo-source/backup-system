@@ -162,20 +162,18 @@
 
 		callChargeFiles();
 		
-			submit.addEventListener('click', async () => {
+		submit.addEventListener('click', async () => {
 			var id = select.options[select.selectedIndex].value;
 			alert(id);
 			try{
-				await DeletePeriodicity(id);// Call Go function
-  				document.getElementById("infoText").innerText = "."; 
-
+				response = await DeletePeriodicity(id);// Call Go function
+				document.getElementById("infoText").innerText = response.Msg; 
+				borrarContenido();
+				callChargeFiles();
 			}catch(error){
 				document.getElementById("infoText").innerText = error; 
 			}
-
 		});
-
-
 
 		async function callChargeFiles(){
 
@@ -196,6 +194,13 @@
 				}
 			}
 
+		}
+		function borrarContenido() {
+			var select = document.getElementById("select");
+			var length = select.options.length;
+			for (i = length-1; i >= 0; i--) {
+				select.options[i] = null;
+			}
 		}
 	</script>
 </body>
