@@ -17,6 +17,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -36,6 +37,8 @@ type user struct {
 	pubKey                    *rsa.PublicKey
 	privKey                   *rsa.PrivateKey
 	periodicals               []Periodical
+	backUpIdentifier          int
+	mutex                     *sync.Mutex
 }
 
 //Hash the password and save 50% to encrypt files or folders,
@@ -53,6 +56,8 @@ func (u *user) Hash(password string) {
 }
 
 func (u *user) sign(username, password, command string) (resp, error) {
+	u.backUpIdentifier = 0
+	u.mutex = &sync.Mutex{}
 	u.username = username
 	u.Hash(password)
 
@@ -274,20 +279,27 @@ func (u *user) SendBackUpToServer(path string, isPeriodical bool) (resp, error) 
 	} else {
 		backUpName = fmt.Sprintf("%s;%s;", "manual", backUpName)
 	}
+
+	//Generate temporary filename to the zip to avoid conflcts
+	u.mutex.Lock()
+	zipname := fmt.Sprintf("compressed%d.zip", u.backUpIdentifier)
+	u.backUpIdentifier++
+	u.mutex.Unlock()
+
 	//Generate encryption key
 	key := RandStringBytes(16)
 	response := resp{}
 	//Creates a temporary file to compress, encrypt and send to the server
-	err = compressFile(path, "compressed.zip")
+	err = compressFile(path, zipname)
 	if err != nil {
 		return response, err
 	}
-	err = u.EncryptFile("compressed.zip", key)
+	err = u.EncryptFile(zipname, key)
 	if err != nil {
 		return response, err
 	}
 	//Read the content of the file
-	content, err := ioutil.ReadFile("compressed.zip")
+	content, err := ioutil.ReadFile(zipname)
 	if err != nil {
 		return response, err
 	}
@@ -316,7 +328,7 @@ func (u *user) SendBackUpToServer(path string, isPeriodical bool) (resp, error) 
 	json.Unmarshal(body, &response)
 
 	//Removes the temporary file
-	err = os.Remove("compressed.zip")
+	err = os.Remove(zipname)
 	if err != nil {
 		return response, err
 	}
@@ -641,9 +653,9 @@ func (u *user) AddPeriodicity(path, nextBackUp string) (resp, error) {
 func (u *user) deletePeriodicity(id int) error {
 	for i, p := range u.periodicals {
 		if p.ID == id {
-			u.periodicals = append(u.periodicals[:i], u.periodicals[i+1:]...)
-			// u.periodicals[id] = u.periodicals[len(u.periodicals)-1]
-			// u.periodicals = u.periodicals[:len(u.periodicals)-1]
+			// u.periodicals = append(u.periodicals[:i], u.periodicals[i+1:]...)
+			u.periodicals[i] = u.periodicals[len(u.periodicals)-1]
+			u.periodicals = u.periodicals[:len(u.periodicals)-1]
 			content, err := json.Marshal(u.periodicals)
 			if err != nil {
 				return err
