@@ -1,2 +1,4 @@
 /server/backups
 /client/recover
+/server/bbdd
+/client/*.p
