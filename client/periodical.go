@@ -15,6 +15,7 @@ type Periodical struct {
 	TimeToUpdload time.Duration
 	NextUpload    time.Time
 	stopchan      chan struct{}
+	delete        chan struct{}
 }
 
 //readPeriodicity is used to read the user periodicity config
@@ -36,6 +37,7 @@ func (u *user) readPeriodicity() error {
 	}
 	for i := range u.periodicals {
 		u.periodicals[i].stopchan = make(chan struct{})
+		u.periodicals[i].delete = make(chan struct{})
 	}
 
 	return nil
@@ -62,6 +64,8 @@ func (u *user) addPeriodicity(p Periodical) {
 	for {
 		select {
 		case <-p.stopchan:
+			return
+		case <-p.delete:
 			err := u.deletePeriodicity(p.ID)
 			if err != nil {
 				fmt.Println(err)
@@ -95,6 +99,7 @@ func (u *user) AddPeriodicity(path, nextBackUp string) (resp, error) {
 		TimeToUpdload: nextBackUpDuration,
 		NextUpload:    nextUpload,
 		stopchan:      make(chan struct{}),
+		delete:        make(chan struct{}),
 	}
 	u.periodicals = append(u.periodicals, p)
 	go u.addPeriodicity(p)
@@ -148,7 +153,7 @@ func (u *user) DeletePeriodicity(idStr string) (resp, error) {
 	}
 	for i, p := range u.periodicals {
 		if p.ID == ID {
-			close(u.periodicals[i].stopchan)
+			close(u.periodicals[i].delete)
 			return resp{Ok: true, Msg: "Periodicity stopped"}, nil
 		}
 	}
