@@ -335,30 +335,17 @@ func (u *user) SendBackUpToServer(path string, isPeriodical bool) (resp, error) 
 //you want to recover and decrypt and uncompress the file after that
 func (u *user) RecoverBackUp(name string) (resp, error) {
 	response := resp{}
-	req, err := http.NewRequest("GET", "https://localhost:9043/backup", bytes.NewBuffer([]byte(name)))
-	//To authorize the user
-	req.Header.Add("token", u.token)
-	req.Header.Add("from", "me")
 
-	res, err := u.httpclient.Do(req)
-	if err != nil {
-		return response, err
-	}
-	defer res.Body.Close()
-
-	body, err := ioutil.ReadAll(res.Body)
+	fileContent, key, err := u.downloadFile(name)
 	if err != nil {
 		return response, err
 	}
 	//Creates a temporary file to decrypt, uncompress and recover the files
-	err = ioutil.WriteFile("recover.zip", body, 0644)
+	err = ioutil.WriteFile("recover.zip", fileContent, 0644)
 	if err != nil {
 		return response, err
 	}
-	key, err := rsa.DecryptOAEP(sha256.New(), rand.Reader, u.privKey, decode64(res.Header.Get("key")), nil)
-	if err != nil {
-		return response, err
-	}
+
 	err = u.DecryptFile("recover.zip", key)
 	if err != nil {
 		return response, err
@@ -373,6 +360,31 @@ func (u *user) RecoverBackUp(name string) (resp, error) {
 		return response, err
 	}
 	return resp{Ok: true, Msg: "Recovered ok."}, nil
+}
+
+func (u *user) downloadFile(name string) ([]byte, []byte, error) {
+	req, err := http.NewRequest("GET", "https://localhost:9043/backup", bytes.NewBuffer([]byte(name)))
+	//To authorize the user
+	req.Header.Add("token", u.token)
+
+	res, err := u.httpclient.Do(req)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer res.Body.Close()
+	keyEncrypted := res.Header.Get("key")
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	key, err := rsa.DecryptOAEP(sha256.New(), rand.Reader, u.privKey, decode64(keyEncrypted), nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return body, key, nil
 }
 
 //ListFiles ask the server for the backups saved in the server from this user
@@ -402,49 +414,32 @@ func (u *user) ListFiles() (resp, error) {
 //After that sends the key encrypted with the friend's public key.
 func (u *user) ShareFileWith(filename, username string) (resp, error) {
 	response := resp{}
-	req, err := http.NewRequest("GET", "https://localhost:9043/keyfile", nil)
-	req.Header.Add("token", u.token)
-	req.Header.Add("filename", filename)
-	res, err := u.httpclient.Do(req)
+
+	key, err := u.getFileKey(filename)
 	if err != nil {
 		return response, err
 	}
-	defer res.Body.Close()
-
-	//Unmarshal the response to a resp struct
-	body, err := ioutil.ReadAll(res.Body)
+	//decrypt the filekey, to be encrypted later
+	keyDecripted, err := rsa.DecryptOAEP(sha256.New(), rand.Reader, u.privKey, key, nil)
 	if err != nil {
 		return response, err
 	}
-	json.Unmarshal(body, &response)
-
-	if response.Ok {
-		key := decode64(response.Msg)
-		keyDecripted, err := rsa.DecryptOAEP(sha256.New(), rand.Reader, u.privKey, key, nil)
-		if err != nil {
-			return response, err
-		}
-		friendPubKey, err := u.getFriendPubKey(username)
-		if err != nil {
-			return response, err
-		}
-		keyEncriptedWithFriendPubKey, err := rsa.EncryptOAEP(sha256.New(), rand.Reader, friendPubKey, keyDecripted, nil)
-		if err != nil {
-			return response, err
-		}
-
-		return u.shareFile(filename, username, encode64(keyEncriptedWithFriendPubKey))
+	friendPubKey, err := u.getFriendPubKey(username)
+	if err != nil {
+		return response, err
 	}
-	return response, fmt.Errorf("Error: %s", response.Msg)
-}
-func (u *user) shareFile(filename, username, key string) (resp, error) {
-	response := resp{}
+	//encrypt the filekey with public key of the other person
+	keyEncriptedWithFriendPubKey, err := rsa.EncryptOAEP(sha256.New(), rand.Reader, friendPubKey, keyDecripted, nil)
+	if err != nil {
+		return response, err
+	}
+
 	req, err := http.NewRequest("POST", "https://localhost:9043/share", nil)
 	//To authorize the user
 	req.Header.Add("token", u.token)
 	req.Header.Add("friend", username)
 	req.Header.Add("filename", filename)
-	req.Header.Add("key", key)
+	req.Header.Add("key", encode64(keyEncriptedWithFriendPubKey))
 
 	res, err := u.httpclient.Do(req)
 	if err != nil {
@@ -461,6 +456,7 @@ func (u *user) shareFile(filename, username, key string) (resp, error) {
 
 	return response, nil
 }
+
 func (u *user) getFriendPubKey(username string) (*rsa.PublicKey, error) {
 	pubKey := &rsa.PublicKey{}
 	response := resp{}
@@ -489,18 +485,54 @@ func (u *user) getFriendPubKey(username string) (*rsa.PublicKey, error) {
 	}
 	return pubKey, fmt.Errorf("Error: %s", response.Msg)
 }
+func (u *user) getFileKey(filename string) ([]byte, error) {
+	response := resp{}
+	req, err := http.NewRequest("GET", "https://localhost:9043/keyfile", nil)
+	req.Header.Add("token", u.token)
+	req.Header.Add("filename", filename)
+	res, err := u.httpclient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	//Unmarshal the response to a resp struct
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+	json.Unmarshal(body, &response)
+
+	if response.Ok {
+		key := decode64(response.Msg)
+		return key, nil
+	}
+	return nil, fmt.Errorf(response.Msg)
+}
 
 //StopSharingFile receives a filename and stops sharing it for all people
 func (u *user) StopSharingFile(filename string) (resp, error) {
 	response := resp{}
-	key, err := rsa.EncryptOAEP(sha256.New(), rand.Reader, u.pubKey, RandStringBytes(16), nil)
+	//generate and encrypt the new file key
+	newKeyDecrypted := RandStringBytes(16)
+	newKeyEncrypted, err := rsa.EncryptOAEP(sha256.New(), rand.Reader, u.pubKey, newKeyDecrypted, nil)
 	if err != nil {
 		return response, err
 	}
-	req, err := http.NewRequest("DELETE", "https://localhost:9043/share", nil)
+	//get the old file key and the content encrypted
+	fileContent, oldKey, err := u.downloadFile(filename)
+	//decrypt the content with the old file key
+	fileContent, err = u.decrypt(fileContent, oldKey)
+	if err != nil {
+		return response, err
+	}
+	//encrypt the content with the new file key
+	fileContent, err = u.encrypt(fileContent, newKeyDecrypted)
+
+	req, err := http.NewRequest("DELETE", "https://localhost:9043/share", bytes.NewBuffer(fileContent))
 	req.Header.Add("token", u.token)
 	req.Header.Add("filename", filename)
-	req.Header.Add("newkey", encode64(key))
+	req.Header.Add("newkey", encode64(newKeyEncrypted))
 	res, err := u.httpclient.Do(req)
 	if err != nil {
 		return response, err

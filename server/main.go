@@ -231,15 +231,6 @@ func backupHandler(w http.ResponseWriter, req *http.Request) {
 
 				path := u.GetFullPath(filename)
 
-				//If the file is from other user, it's the name, if it's mine from=="me"
-				// from := req.Header.Get("from")
-				//Read the content of the file
-				// var path string
-				// if from == "me" {
-				// 	path = backUpPath + uStr + string(body)
-				// } else {
-				// 	path = backUpPath + from + string(body)
-				// }
 				content, err := ioutil.ReadFile(path)
 				if err != nil {
 					response(w, false, "Back up not found")
@@ -311,6 +302,14 @@ func shareHandler(w http.ResponseWriter, req *http.Request) {
 			if err != nil {
 				response(w, false, err.Error())
 			} else {
+				body, err := ioutil.ReadAll(req.Body)
+				if err != nil {
+					fmt.Println(err)
+				}
+				err = ioutil.WriteFile(fileName, body, 0644)
+				if err != nil {
+					fmt.Println(err)
+				}
 				for _, exfriend := range users {
 					exfriend.DeleteSharedFileWithMe(fileName, uStr)
 				}
