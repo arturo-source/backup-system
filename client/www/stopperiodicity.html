@@ -133,7 +133,7 @@
 			<div>
 				<h2 class="titlemenu">STOP PERIODICITY</h2>
 				<a onclick="chargeView('www/menu.html')" class="iconmenu">&#128281;</a>
-				<a onclick="chargeView('www/index.html')" class="iconmenu">&#128282;</a>
+				<a onclick="chargeView('www/index.html');LogOut()" class="iconmenu">&#128282;</a>
 			</div>
 			<div>
 				<h1>Select the file you want to stop its periodicity</h1>
@@ -164,7 +164,6 @@
 		
 		submit.addEventListener('click', async () => {
 			var id = select.options[select.selectedIndex].value;
-			alert(id);
 			try{
 				response = await DeletePeriodicity(id);// Call Go function
 				document.getElementById("infoText").innerText = response.Msg; 

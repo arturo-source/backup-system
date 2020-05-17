@@ -42,6 +42,7 @@ func main() {
 	ui.Bind("StopSharingFile", myui.u.StopSharingFile)
 	ui.Bind("AddPeriodicity", myui.u.AddPeriodicity)
 	ui.Bind("DeletePeriodicity", myui.u.DeletePeriodicity)
+	ui.Bind("LogOut", myui.u.LogOut)
 
 	ui.Bind("GetPeriodicity", myui.u.GetPeriodicity)
 
