@@ -69,9 +69,8 @@ var admin user
 
 // Response type to comunicate with the client
 type resp struct {
-	Ok        bool
-	Msg       string
-	UserToken string
+	Ok  bool
+	Msg string
 }
 
 // Fill the struct and send the response
@@ -317,6 +316,10 @@ func shareHandler(w http.ResponseWriter, req *http.Request) {
 				}
 				response(w, true, fileName+" isn't shared now")
 			}
+			err = saveDatabase()
+			if err != nil {
+				fmt.Println(err)
+			}
 
 		case http.MethodPost:
 			fileName := req.Header.Get("filename")
@@ -330,6 +333,10 @@ func shareHandler(w http.ResponseWriter, req *http.Request) {
 				response(w, false, err.Error())
 			} else {
 				response(w, true, "File shared successfully")
+			}
+			err = saveDatabase()
+			if err != nil {
+				fmt.Println(err)
 			}
 		}
 	}

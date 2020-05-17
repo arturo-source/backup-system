@@ -5,12 +5,15 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"sync"
 
 	"github.com/zserge/lorca"
 )
 
 func main() {
 	u := user{}
+	u.backUpIdentifier = 0
+	u.mutex = &sync.Mutex{}
 	args := []string{}
 	if runtime.GOOS == "linux" {
 		args = append(args, "--class=Lorca")
