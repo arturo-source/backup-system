@@ -95,6 +95,13 @@ func (u *user) SignUp(username, password string) (resp, error) {
 	return u.sign(username, password, "register")
 }
 
+//LogOut close all the go routines to avoid conflicts
+func (u *user) LogOut() {
+	for _, p := range u.periodicals {
+		close(p.stopchan)
+	}
+}
+
 func (u *user) encrypt(content, key []byte) ([]byte, error) {
 	if key == nil {
 		key = u.cipherKey
