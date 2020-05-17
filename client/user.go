@@ -671,18 +671,22 @@ func (u *user) deletePeriodicity(id int) error {
 			return nil
 		}
 	}
-
-	return fmt.Errorf("This ID doesn't correspond to any periodicity")
+	return fmt.Errorf("ID %d not found", id)
 }
 
 //DeletePeriodicity is public because is used to comunicate from JavaScript, when the user wants to close the thread is doing the backups
-func (u *user) DeletePeriodicity(id string) (resp, error) {
-	i, err := strconv.Atoi(id)
+func (u *user) DeletePeriodicity(idStr string) (resp, error) {
+	ID, err := strconv.Atoi(idStr)
 	if err != nil {
 		return resp{Ok: false, Msg: err.Error()}, err
 	}
-	close(u.periodicals[i].stopchan)
-	return resp{Ok: true, Msg: "Periodicity stopped"}, nil
+	for i, p := range u.periodicals {
+		if p.ID == ID {
+			close(u.periodicals[i].stopchan)
+			return resp{Ok: true, Msg: "Periodicity stopped"}, nil
+		}
+	}
+	return resp{Ok: false, Msg: fmt.Sprintf("Periodicity %s not found", idStr)}, fmt.Errorf("Periodicity %s not found", idStr)
 }
 
 type PeriodicalParse struct {
